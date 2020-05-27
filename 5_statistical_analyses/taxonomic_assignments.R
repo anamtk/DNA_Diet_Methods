@@ -90,7 +90,7 @@ id_tab$taxonomy <- replace_na(id_tab$taxonomy, "no hit")
 # Create output for future analyses
 ###########################
 
-#write to a file for import into future analyses
+#write taxonomies to a file for import into future analyses
 taxonomies <- id_tab %>%
   dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, taxonomy)
 
