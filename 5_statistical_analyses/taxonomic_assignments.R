@@ -21,7 +21,7 @@ library(tidyverse) #tidy data
 
 comm <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = '\t')
 #rename X to ASV in all these tables.
-comm <- rename(meso, "ASV" = "X.OTU.ID")
+comm <- rename(comm, "ASV" = "X.OTU.ID")
 
 #rename all the sample names across dataframes for consistency
 colnames(comm) <- sapply(str_split(colnames(comm), "S"), function(x){return(x[[1]])})
