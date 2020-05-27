@@ -1,0 +1,7 @@
+ASV,ID,Level,Kingdom,Phylum,Class,Order,Family,Genus,Species
+ASV_37,Opisthokonta,HIGHER,,,,,,,
+ASV_3,Hortaea thailandica,Species,Fungi,Ascomycota,Dothideomycetes,Capnodiales,Teratosphaeriaceae,Hortaea,thailandica
+ASV_2,Dothideales,Order,Fungi,,Dothideomycetes,Dothideales,,,
+ASV_10,Albatrellus,Genus,Fungi,,Agaricomycetes,Russulales,Albatrellaceae,Albatrellus,
+ASV_19,Cortinarius cf. violaceus TRTC155606,Species,Fungi,Basidiomycota,Agaricomycetes,Agaricales,Cortniariaceae,Cortinarius,Cortinarius violaceus
+ASV_1,Tremellales,Order,Fungi,Basidiomycota,Tremellomycetes,Tremallales,,,

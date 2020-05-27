@@ -1,0 +1,15 @@
+#BBSplit cleaning with predator and prey reference files
+#Ana Miller-ter Kuile, January 29, 2020
+#create a list of samples to loop through based on sample names
+ls *.fq.gz | cut -f1-3 -d "_" > samples
+
+#loop through each primer trimmed paired end reads and map to predator and prey reference files. This takes a long time!
+
+for sample in $(cat samples)
+do
+
+echo "On sample: $sample"
+
+    bbmap/bbsplit.sh ref=predator_ref.fasta,prey_ref.fasta in1=${sample}_R1_trimmed.fq.gz in2=${sample}_R2_trimmed.fq.gz basename=%_${sample}_R#.fq outu1=${sample}_R1_cleaned.fq outu2=${sample}_R2_cleaned.fq ambiguous=best ambiguous2=best int=F
+
+done

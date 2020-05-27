@@ -1,0 +1,1302 @@
+---
+title: "Field Spider Analyses, April 2020"
+author: "Ana Miller-ter Kuile"
+date: "4/3/2020"
+output:
+  html_document:
+    code_folding: hide
+    toc: yes
+    toc_float:
+      collapsed: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, include=FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r load packages}
+#Load required packages ####
+library(here) #tidy data
+library(tidyverse) #tidy data
+library(ggplot2) #visualization
+library(emmeans) #model marginal means
+library(rcompanion) #model pairwise comparisons
+library(effects) #model effect visualizations
+library(lattice) #model effects visulaizations
+library(DHARMa) #model diagnostics
+library(MuMIn) #model diagnostics
+library(glmmTMB) #mixed models
+library(lme4) #mixed models
+library(ggeffects) #ggpredict function
+library(picante) #phylogenetic analyses
+library(ape) #phylogenetic analyses
+library(phytools) #phylogenetic analyses
+library(phyloseq) #phylogenetic analyses
+library(hciR) #for as_matrix function
+library(performance) #for binomail model fit
+library(see) #for binomial model fit
+library(coin) #wilcoxon test
+library(MASS) #glm.nb
+library(vegan) #rrarefy
+library(cowplot) #plot grid at end
+library(esc) #effect sizes
+```
+
+# Introduction
+
+*This is part two of two of the analyses for this project. Part 1 examined environmental contamination for mesocosm-fed spiders.*
+
+This code examines the diets of field-collected predators (the spider *Heteropoda venatoria*), specifically looking at the detection, diversity, and abundance of prey DNA and how surface sterilization of predator individuals might alter these measures of diet diversity. 
+
+Specifically, we are exploring:
+
+#### Does surface sterilization alter prey ASV detection or read abundance by removing surface contamination?
+
+## Why it matters
+
+DNA metabarcoding is emerging as a new tool for deteriming predation and parasitism interactions in communities and food webs (i.e. Wirta et al 2014, Jacobsen et al. 2018). In many ecosystems where DNA metabarcoding is going to provide the most novel insight (i.e. invertebrate-dominated communities), the small size of predators in these systems has historically been the limitation to broad-scale diet analyses. When extracting DNA for DNA metabarcoding, this small body size also means it is sometimes necessary to extract DNA from entire individuals rather than targeting the gut contents of these organisms. This means that DNA contaminants on the outsides of individuals may alter prey diversity by falsely inflating estimated prey diversity (if prey DNA is on the outside surfaces of predators) or by drowning out prey DNA diversity because contaminant DNA will fill up sequencing runs. 
+
+# Analyses outline
+
+#### The data
+
+The data for these analyses consist of 37 individuals of the spider species *Heteropoda venatoria* collected on Palmyra Atoll in 2015. All spiders were collected in natural habitats on the atoll in individual collection chambers. All spiders were frozen at -20C immediately after capture and then transferred to vials in a -80C freezer until DNA extraction in 2019. We surface sterilized 18 individuals by submerging them in 10% bleach for 2 minutes, and then washing them in deionized water for another 2 minutes. The remaining 19 spider individuals were not surface sterilized.
+
+```{r experimental setup, echo=FALSE, include=TRUE, out.width="100%", fig.align='center', fig.cap = "Figure 2: The field-collected surface contamination experimental setup with sample sizes."}
+knitr::include_graphics(here("Pictures", "field_experiment.png"))
+```
+
+After DNA extraction, PCR amplification, and sequencing on an Illumina MiSeq platform, sequences were quality filtered and denoised using two common denoising algorithms (UNOISE3 and DADA2). Both of these denoising algorithms take into account DNA sequence abundance and quality to combine sequences into Amplicon Sequence Variants (ASVs). Unlike traditional assignment methods (such as operational taxonomic units (OTUs)), which cluster sequences based on 97% sequence similarity, ASV denoising takes into account both sequence quality and abundance, and can detect differences and separate sequences that differ by one or very few nucleotides (ASVs are sometimes refered to as exact sequence variant (ESVs)).
+
+Our final dataset for these field-collected spiders includes ASVs assigned to prey taxonomies and the abundance of these ASVs in each sample for two denoising algorithms (UNOISE3 and DADA2). In addition, we have some mesocosm spiders (18) which we surface sterilized and some which we did not surface sterilize (19). 
+
+#### The analyses
+
+We will be looking at the whether surface sterilization alters our understanding of predator-prey feeding interactions
+
+
+1. Big picture patterns in diversity:
+
+**Does surface sterilization alter the abundance and diversity of prey DNA?**
+
+  + Prey DNA detection by sample 
+  
+      **glm(Presence ~ surface_sterilization x algorithm, family = binomial)**
+    
+  + Total species richness of all prey by sample
+  
+      **glm(SR ~ surface_sterilization x algorithm, family = poisson)**
+      
+  + Prey ASV read abundance by sample
+  
+      **glm(reads ~ surface_sterilization x algorithm, family = poisson)**
+ 
+2. Zooming in to changes in community composition:
+
+**Does surface sterilization alter the community composition of prey DNA?**
+
+      
+  + Jaccard presence-absence community analysis of rarefied prey DNA
+  
+      **glmer/glmmTMB(presence ~ surface_sterilization x algorithm + (1 + surface_sterilization | prey_species), family = binomial)** *(Note: may have to think of alternative ways to target "core" prey based on the results of this analysis)*
+      
+  + Some measure of core prey (ala. Shade et al. 2019) based on abundance in a sample and presence across samples
+      
+#### The results of these analyses are summarized in the [summary table](#summary) along with some initial [ecological interpretations](#ecology).
+
+#Set-up
+
+## Import ASV tables
+
+First, we will import the data from both denoising algorithms (DADA2 and UNOISE3) and the metadata attached to each of the spiders in our dataset, including whether they were surface sterilized or not.
+
+```{r what the dfs are, eval=FALSE, include=TRUE}
+d2_comm <- read.csv(here("data", "ASV_tables", "dada2_uc_asv_tab.tsv"), sep = "\t")
+u3_comm <- read.csv(here("data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = '\t')
+ 
+#sample metadata 
+metadata <- read.csv(here("data", "Sample_Metadata.csv")) 
+```
+
+
+```{r import datasets and change column names, include=FALSE}
+d2_comm <- read.csv(here("data", "ASV_tables", "dada2_uc_asv_tab.tsv"), sep = "\t")
+u3_comm <- read.csv(here("data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = '\t')
+
+#rename X to ASV in all these tables.
+d2_comm <- rename(d2_comm, "ASV" = "X")
+u3_comm <- rename(u3_comm, "ASV" = "X.OTU.ID")
+
+#rename all the sample names across dataframes for consistency
+colnames(d2_comm) <- sapply(str_split(colnames(d2_comm), "_"), function(x){return(x[[1]])})
+colnames(d2_comm) <- str_remove(colnames(d2_comm), "\\.")
+
+d2_comm <- rename(d2_comm, "CL1" = "CL12")
+d2_comm <- rename(d2_comm, "CL4" = "CL42")
+
+colnames(u3_comm) <- sapply(str_split(colnames(u3_comm), "S"), function(x){return(x[[1]])})
+u3_comm <- rename(u3_comm, "ASV" = "A")
+
+#sample metadata
+metadata <- read.csv(here("data", "Sample_Metadata.csv"))
+```
+
+The ASV tables are matrices with ASVs as rows, and samples as columns:
+
+```{r sample df heads, include=TRUE}
+d2_comm[1:10, 1:10]
+```
+
+And the metadata includes important data for each sample:
+
+```{r metadata df head, include = TRUE}
+str(metadata)
+```
+
+## Assign taxonomies
+
+For each of the ASVs in each of these tables, we used BLAST (with GenBank) and the BOLD ID Engine to assign taxonomies to these ASVs. We will import the dataframes of these taxonomic assignments for each algorithm and then subset the taxonomies that belong to prey items only. Before any of our analyses, we will also combine ASVs with duplicate taxonomic assignments (i.e. both matched to *Coleoptera sp. A*) into one prey taxonomy for analyses. 
+
+```{r example of taxonomy DBs, eval=FALSE, include=TRUE}
+#DADA2#
+#import both NCBI and BOLD taxonomies
+d2_ncbi <- read.csv(here("6_taxonomic_assignment", "MEGAN", "dada2_unclean",
+                            "dada2_uc_ncbi_taxa.csv"))
+
+d2_bold <- read.csv(here("6_taxonomic_assignment", "BOLD", "dada2_uc", 
+                            "dada2_uc_taxa_bold.csv"))
+ 
+#Have the same for UNOISE3 
+#import both NCBI and BOLD taxonomies
+u3_ncbi <- read.csv(here("6_taxonomic_assignment", "MEGAN", "unoise_unclean",
+                            "unoise_uc_ncbi_taxa.csv"))
+u3_bold <- read.csv(here("6_taxonomic_assignment", "BOLD", "usearch_uc", 
+                            "unoise_uc_bold_taxa.csv"))
+```
+
+
+```{r assign taxonomies, include = FALSE}
+#DADA2#
+#import both NCBI and BOLD taxonomies
+d2_ncbi <- read.csv(here("6_taxonomic_assignment", "MEGAN", "dada2_unclean",
+                            "dada2_uc_ncbi_taxa.csv"))
+#this is everything that got a taxonomic assignment through MEGAN
+d2_all <- read.csv(here("6_taxonomic_assignment", "MEGAN", "dada2_unclean",
+                           "dada2_uc_all.csv"))
+d2_bold <- read.csv(here("6_taxonomic_assignment", "BOLD", "dada2_uc", 
+                            "dada2_uc_taxa_bold.csv"))
+d2_bold <- rename(d2_bold, "ASV" = "Query.ID")
+
+#Sort by "predator", "prey", and "non-diet" before merging into one 
+#dataframe for assigning to the abundance table!
+#this following ifelse set will depend on the taxonomy of the set of samples
+#and for this one, these are the categories that seemed to be appropriate based
+#on the taxonomy list after looking at it
+#sort into categories for bold:
+d2_bold$taxonomy <- ifelse(
+  d2_bold$ID == "Heteropoda venatoria", "predator",
+  ifelse(d2_bold$Kingdom == "Fungi", "non-diet", 
+         ifelse(d2_bold$Phylum == "Arthropoda" & d2_bold$ID != "Heteropoda venatoria", 
+                "prey", "non-diet"
+         )))
+
+#sort into categories for ncbi:
+d2_ncbi$taxonomy <- ifelse(
+  d2_ncbi$ID == "Sparassidae" | d2_ncbi$ID == "Heteropoda venatoria", "predator",
+  ifelse(d2_ncbi$Phylum == "Arthropoda" & d2_ncbi$ID != "Sparassidae" & d2_ncbi$ID != "Heteropoda venatoria", 
+         "prey", "non-diet"
+  ))
+
+#this is an anti-join to subset from ALL MEGAN hits for those that aren't within
+#diet categories, but which still got assignments in MEGAN
+d2_nond <- d2_all %>%
+  anti_join(d2_ncbi, by = "ASV")
+#this gives these all the category of "non-diet" to distinguish from those that didn't
+#get any taxonomic assignment at all. 
+d2_nond$taxonomy <- d2_nond$Category
+
+#thus, the taxonomy variable has 4 levels: predator, prey, non-diet, non-hit (which
+#we will assign below after merging with full ASV table)
+#subset only the variables of interest from these two dataframes before merging
+d2_bold_id <- d2_bold %>%
+  dplyr::select(ASV, ID, Order, taxonomy)
+
+d2_ncbi_id <- d2_ncbi %>%
+  dplyr::select(ASV, ID, Order, taxonomy)
+
+#join them together by ASV and taxonomy
+d2_id_both <- d2_bold_id %>%  
+  full_join(d2_ncbi_id, by = c("ASV", "taxonomy"))
+
+#join these both again with the non-diet hits
+d2_id_all <- d2_id_both %>%
+  full_join(d2_nond, by = c("ASV", "taxonomy"))
+
+d2_id_all <- d2_id_all %>%
+  rename(ID_bold = ID.x,
+         Order_bold = Order.x,
+         ID_ncbi = ID.y,
+         Order_ncbi = Order.y,
+         ID_nondiet = ID,
+         Order_nondiet = Order)
+
+#this binds them all to the community matrix of raw reads
+d2_id_tab <- d2_comm %>%
+  left_join(d2_id_all, by = "ASV")
+
+#set NA taxonomies from join with "no hit" since they didn't match to any
+#taxonomic assignments within our prey, predator, or non-prey categories
+d2_id_tab$taxonomy <- replace_na(d2_id_tab$taxonomy, "no hit")
+
+#write this to a file for importing into the field spider analyses
+d2_taxonomies <- d2_id_tab %>%
+  dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, ID_nondiet, Order_nondiet, taxonomy)
+
+#UNOISE3##
+#import both NCBI and BOLD taxonomies
+u3_ncbi <- read.csv(here("6_taxonomic_assignment", "MEGAN", "unoise_unclean",
+                            "unoise_uc_ncbi_taxa.csv"))
+u3_bold <- read.csv(here("6_taxonomic_assignment", "BOLD", "usearch_uc", 
+                            "unoise_uc_bold_taxa.csv"))
+u3_bold <- rename(u3_bold, "ASV" = "Query.ID")
+
+#Sort by "predator", "prey", and "non-diet" before merging into one 
+#dataframe for assigning to the abundance table!
+#this following ifelse set will depend on the taxonomy of the set of samples
+#and for this one, these are the categories that seemed to be appropriate based
+#on the taxonomy list after looking at it
+#sort into categories for bold:
+u3_bold$taxonomy <- ifelse(
+  u3_bold$ID == "Heteropoda venatoria", "predator",
+  ifelse(u3_bold$Kingdom == "Fungi" | u3_bold$Class == "Mammalia", "non-diet", 
+         ifelse(u3_bold$Phylum == "Arthropoda" | u3_bold$Class == "Reptilia" & u3_bold$ID != "Heteropoda venatoria", 
+                "prey", "non-diet"
+         )))
+
+#sort into categories for ncbi:
+u3_ncbi$taxonomy <- u3_ncbi$Category
+
+#thus, the taxonomy variable has 4 levels: predator, prey, non-diet, non-hit (which
+#we will assign below after merging with full ASV table)
+#subset only the variables of interest from these two dataframes before merging
+u3_bold_id <- u3_bold %>%
+  dplyr::select(ASV, ID, Order, taxonomy)
+
+u3_ncbi_id <- u3_ncbi %>%
+  dplyr::select(ASV, ID, Order, taxonomy)
+
+#join them together by ASV and taxonomy
+u3_id_all <- u3_bold_id %>%  
+  full_join(u3_ncbi_id, by = c("ASV", "taxonomy"))
+
+u3_id_all <- u3_id_all %>%
+  rename(ID_bold = ID.x,
+         Order_bold = Order.x,
+         ID_ncbi = ID.y,
+         Order_ncbi = Order.y)
+
+#this binds them all to the community matrix of raw data
+u3_id_tab <- u3_comm %>%
+  left_join(u3_id_all, by = "ASV")
+
+#set NA taxonomies from join with "no hit" since they didn't match to any
+#taxonomic assignments within our prey, predator, or non-prey categories
+u3_id_tab$taxonomy <- replace_na(u3_id_tab$taxonomy, "no hit")
+
+#write to a file for import into field analyses
+u3_taxonomies <- u3_id_tab %>%
+  dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, taxonomy)
+```
+
+Each taxonomic assignment includes identifiers from the Kingdom level down to Order, Family, Genus, or Species. Here are a few examples of taxonomies assigned to order and lower:
+
+```{r ex taxonomy assignment, include =TRUE, echo=FALSE}
+d2_ncbi %>%
+  dplyr::select(ASV, Order, Family, Genus, Species) %>%
+  filter(ASV %in% c("ASV_1", "ASV_100", "ASV_105", "ASV_106", "ASV_154", 
+                    "ASV_5", "ASV_6", "ASV_107"))
+```
+
+# Big picture patterns in diversity:
+
+We are first going to look at whether surface sterilization changes the detection of prey ASVs in our dataset. Again, roughly half of the samples were surface sterilized and the other half were not surface sterilized. Furthermore, we ran two different bioinformatic algorithms on ALL samples. We will be looking at prey detection, prey richness, and prey read abundance *per sample* and how sterilization may alter these metrics of prey diversity.
+
+  1. Prey detection by sample 
+  
+      **glm(Presence ~ surface_sterilization x algorithm, family = binomial)**
+    
+  2. Total species richness of all prey by sample
+  
+      **glm(SR ~ surface_sterilization x algorithm, family = poisson)**
+  
+  For models, we we will do model selection altering just the surface sterilization term, since this is the term we are interested in in the model. This full model is asking whether surface sterilization or denoising algorithm matter, and whether the relationship with them varies depending on the algorithm considered. 
+  
+  3. Prey ASV read abundance by sample
+  
+      **glm(reads ~ surface_sterilization x algorithm, family = poisson)**
+
+For models, we we will do model selection altering just the surface sterilization term, since this is the term we are interested in in the model. This full model is asking whether surface sterilization or denoising algorithm matter, and whether the relationship with them varies depending on the algorithm considered. 
+
+### Data set up: subset field spiders and rarefy
+
+**Subset field spiders, rarefy samples, combine duplicate prey DNA taxonomies, and subset ASVs to include only those which are prey ASVs**
+
+Right now, this dataset includes all the spiders in our project, including those which we analyzed in Part 1 (mesocosm spiders) and all ASVs, including both prey ASVs and everything else detected in these samples, so we will need to subset the field spiders and then prey ASVs from this dataset. We will also need to combine duplicate taxonomic assignments for these prey ASVs prior to any analysis of species richness or community composition. 
+
+After subsetting the field spiders and before subsetting and combining the prey ASVs and doing any analyses, however, we need to rarefy our samples to account for unequal sequencing depths that result from random sequencing preferences in the sequencing process on the Illumina MiSeq. To illustrate, if we consider the number of sequences in each sample in our UNOISE3 dataset, we can see that read abundance can vary a lot across samples:
+
+```{r example sequence depth diffs setup, include=TRUE}
+field <- as.character(metadata$sample[which(metadata$Source == "FIELD")]) #vector of the sample names for field samples
+
+u3_commf <- u3_comm
+rownames(u3_commf) <- u3_commf$ASV
+u3_commf <- u3_commf %>%
+  dplyr::select(all_of(field))
+```
+
+```{r example seq depth diff, include=TRUE}
+hist(colSums(u3_commf))
+
+#max read abundance 
+max(colSums(u3_commf))
+#256204
+
+#min read abundance
+min(colSums(u3_commf))
+#16004
+```
+
+This amount of variation in sequencing depth could lead to potentially misleading interpretations of any known prey detection or read abundance derived from this distribution. Thus, we will use the sample with the lowest total sequencing depth to rarefy our dataset so that we are comparing samples with similar sampling effort. 
+
+```{r rarefying datsets}
+#using u3_commf created above and:
+d2_commf <- d2_comm
+rownames(d2_commf) <- d2_commf$ASV
+d2_commf <- d2_commf %>%
+  dplyr::select(all_of(field))
+```
+
+```{r rarefy, include=TRUE}
+u3raref <- min(colSums(u3_commf))
+u3raref #16004
+d2raref <- min(colSums(d2_commf))
+d2raref #11229
+
+set.seed(1)
+u3_comm_rare_f <- as.data.frame(t(rrarefy(t(u3_commf), sample = u3raref)))
+d2_comm_rare_f <- as.data.frame(t(rrarefy(t(d2_commf), sample = d2raref)))
+```
+
+Now, all our samples have equal sampling depths, allowing for comparisons across samples:
+
+```{r sampling depth example, include=TRUE}
+colSums(u3_comm_rare_f)
+```
+
+Now we're ready to do both our presence-absence AND abundance analyses for these field-collected spiders!
+
+### Data set up: subset just prey DNA from this dataset and then combine duplicate taxonomic assignments
+
+```{r subset just prey from dataset, include = TRUE}
+#now subset the tables with taxonomic assignments for the columns
+#that match these samples
+#d2_id_all and u3_id_all combined with the rarefied u3_comm_rare_f above
+u3_comm_rare_f$ASV <- rownames(u3_comm_rare_f)
+u3_fld <- u3_comm_rare_f %>% 
+  left_join(u3_id_all, by = "ASV") %>%
+  dplyr::select(ASV, all_of(field), ID_bold, ID_ncbi, taxonomy) %>%
+  filter(taxonomy == "prey") #42 prey ASVs
+
+d2_comm_rare_f$ASV <- rownames(d2_comm_rare_f)
+d2_fld <- d2_comm_rare_f %>%
+  left_join(d2_id_all, by = "ASV") %>%
+  dplyr::select(ASV, all_of(field), ID_bold, ID_ncbi, ID_nondiet, taxonomy) %>%
+  filter(taxonomy == "prey") #55 prey ASVs
+```
+
+```{r combine duplicate taxonomies}
+#(first, combine uniques) ##
+#use d2_fld and u3_fld with uniques instructions below
+#UNOISE3
+#make the ID columns characters for the ifelse statements below
+u3_fld$ID_bold <- as.character(u3_fld$ID_bold)
+u3_fld$ID_ncbi <- as.character(u3_fld$ID_ncbi)
+
+#ifelse statement that assigns each ASV to a specific taxonomy
+#I want the BOLD ids to be the last option because these are to
+#species in many cases where NCBI/Genbank blasted to order, family, or genus
+#therefore, I'm going to say that if there is no BOLD id, give it the NCBI
+#ID, otherwise, give it the BOLD ID.
+IDs_u3 <- ifelse(is.na(u3_fld$ID_bold), u3_fld$ID_ncbi, 
+                                               u3_fld$ID_bold)
+IDs_u3
+
+#make this a dataframe so we can attach it back to the community
+#matrix for analyses at the sample level and later Jaccard dissimiliarity
+IDs_u3 <- as.data.frame(IDs_u3)
+IDs_u3$ASV <- u3_fld$ASV
+IDs_u3 <- rename(IDs_u3, "unique_ID" = "IDs_u3")
+unique_ID_u3 <- as.data.frame(unique(IDs_u3[c("unique_ID")]))
+unique_ID_u3$sp_number <- seq.int(nrow(unique_ID_u3))
+
+comm_u3 <- IDs_u3 %>%
+  left_join(unique_ID_u3, by = "unique_ID") %>%
+  left_join(u3_fld, by = "ASV") %>%
+  gather(sample, reads, HEV65:HEV100) %>%
+  left_join(metadata, by = "sample")
+
+#DADA2
+#make the ID columns characters for the ifelse statements below
+d2_fld$ID_bold <- as.character(d2_fld$ID_bold)
+d2_fld$ID_ncbi <- as.character(d2_fld$ID_ncbi)
+d2_fld$ID_nondiet <- as.character(d2_fld$ID_nondiet)
+#ifelse statement that assigns each ASV to a specific taxonomy
+#I want the BOLD ids to be the last option because these are to
+#species in many cases where NCBI/Genbank blasted to order, family, or genus
+#therefore, I'm going to say that if there is no BOLD id, give it the NCBI
+#ID, otherwise, give it the BOLD ID.
+IDs_d2 <- ifelse(is.na(d2_fld$ID_bold) & is.na(d2_fld$ID_ncbi), d2_fld$ID_nondiet, 
+                 ifelse(is.na(d2_fld$ID_bold), d2_fld$ID_ncbi, 
+                        d2_fld$ID_bold))
+IDs_d2
+
+#make this a dataframe so we can attach it back to the community
+#matrix for analyses at the sample level and later Jaccard dissimiliarity
+IDs_d2 <- as.data.frame(IDs_d2)
+IDs_d2$ASV <- d2_fld$ASV
+IDs_d2 <- rename(IDs_d2, "unique_ID" = "IDs_d2")
+unique_ID_d2 <- unique(IDs_d2[c("unique_ID")]) 
+unique_ID_d2$sp_number <- seq.int(nrow(unique_ID_d2))
+
+comm_d2 <- IDs_d2 %>%
+  left_join(unique_ID_d2, by = "unique_ID") %>%
+  left_join(d2_fld, by = "ASV") %>%
+  gather(sample, reads, HEV65:HEV100) %>%
+  left_join(metadata, by = "sample")
+```
+
+###Data set up: summarize detection, richness, and abundance for analyses
+
+Now, create summarized dataframes that include detection, richness, and abundance of prey reads in each sample.
+
+```{r detection richness and abundance}
+#species richness of prey in each pipeline
+richness_u3 <- comm_u3 %>%
+  group_by(sample, sp_number, Sterilized) %>%
+  summarize(reads = sum(reads)) %>% #this summarizes reads by each sp in each sample
+  ungroup() %>%
+  group_by(sample, Sterilized) %>% #then if we group by just sample, can count number of >0
+  summarize(SR = sum(reads > 0, na.rm=TRUE)) %>% #count number of species >0
+  mutate(pipeline = "u3") #add pipeline column to bind later
+
+abund_u3 <- comm_u3 %>%
+  group_by(sample, Sterilized) %>% 
+  summarize(abund = sum(reads)) %>% #this counts total abundance of prey reads in a sample
+  mutate(pipeline = "u3", presence = ifelse(abund > 0, 1, 0)) #this says wheter prey detected
+
+#and do the same for DADA2
+richness_d2 <- comm_d2 %>%
+  group_by(sample, sp_number, Sterilized) %>%
+  summarize(reads = sum(reads)) %>%
+  ungroup() %>%
+  group_by(sample, Sterilized) %>%
+  summarize(SR = sum(reads > 0, na.rm=TRUE)) %>%
+  mutate(pipeline = "d2")
+
+abund_d2 <- comm_d2 %>%
+  group_by(sample, Sterilized) %>%
+  summarize(abund = sum(reads)) %>%
+  mutate(pipeline = "d2", presence = ifelse(abund > 0, 1, 0))
+
+#combine the two together for analyses
+all_rich <- richness_u3 %>%
+  bind_rows(richness_d2)
+
+all_abund <- abund_u3 %>%
+  bind_rows(abund_d2)
+```
+
+Now let's look at our broad scale analyses, including prey detection, prey richness, and prey abundance.
+
+##1. Prey DNA presence in samples
+
+```{r presence models, include =TRUE}
+#using all_abund and binomial models
+#create variable for surface sterilization
+all_abund$surf_ster <- as.factor(ifelse(all_abund$Sterilized == "NS", 0, 1)) 
+
+pres_ster_mod <- glm(presence ~ surf_ster*pipeline,
+                    data = all_abund, 
+                    family = binomial)
+
+pres_ster_mod2 <- glm(presence ~ surf_ster + pipeline,
+                     data = all_abund,
+                     family = binomial)
+
+pres_ster_null <- glm(presence ~ pipeline,
+                     data = all_abund,
+                     family = binomial)
+
+AICc(pres_ster_mod, pres_ster_mod2, pres_ster_null)
+```
+
+The null model looks like the best fit based on AICc values. 
+
+```{r model presence summaries, include=TRUE}
+summary(pres_ster_null)
+binned_residuals(pres_ster_null)
+```
+
+```{r model presence fit}
+simulationOutput_pres <- simulateResiduals(fittedModel = pres_ster_null) 
+pres_fit <- plot(simulationOutput_pres, asFactor=TRUE)
+```
+
+For prey presence, the null model which *did not* include surface sterilization is the best fit model.
+
+```{r visualize presence, echo = FALSE, include =TRUE}
+#let's visualize this then
+present <- all_abund %>%
+  group_by(pipeline, Sterilized) %>%
+  filter(presence > 0) %>%
+  summarize(present = n()) 
+
+total <- all_abund %>%
+  group_by(pipeline, Sterilized) %>%
+  summarize(total = n()) %>%
+  dplyr::select(pipeline, Sterilized, total)
+
+presence <- present %>%
+  left_join(total, by = c("pipeline" = "pipeline", "Sterilized" = "Sterilized"))
+
+prey_presence <- presence %>%
+  mutate(presence = present/total)
+
+prey_presence_sum <- prey_presence %>%
+  group_by(Sterilized) %>%
+  summarize(mean = mean(presence), se = sd(presence)/sqrt(2))
+
+(c <- ggplot(prey_presence_sum, aes(x = Sterilized, y = mean, fill = Sterilized)) +
+  geom_bar(stat="identity", position= "dodge") +theme_bw() +
+  labs(x = "Surface sterilization treatment", y = "Percent Prey ASV detection",
+       title = "Percent of samples with prey DNA detected") +
+  scale_fill_manual(values = c("#7B8D65","#F29979")) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean +se), width = 0.2) +
+  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) +
+  theme(legend.position = "none"))
+```
+
+
+```{r detection average}
+all_abund %>%
+  ungroup() %>%
+  summarize(mean = mean(presence))
+```
+
+#### Summary: Surface sterilization does not significantly alter prey DNA detection, with detection of prey DNA in roughly 75% of samples.
+
+##2. Prey DNA richness 
+
+```{r richness models, include=TRUE}
+all_rich$surf_ster <- ifelse(all_rich$Sterilized == "NS", 0, 1)
+
+rich_ster_mod <- glm(SR ~ surf_ster*pipeline,
+                    data = all_rich, 
+                    family = poisson)
+
+rich_ster_mod2 <- glm(SR ~ surf_ster + pipeline,
+                    data = all_rich, 
+                    family = poisson)
+
+rich_ster_null <- glm(SR ~ pipeline,
+                    data = all_rich, 
+                    family = poisson)
+
+AICc(rich_ster_mod, rich_ster_mod2, rich_ster_null)
+```
+
+Again, the null seems like the best fit (not including surface sterilization). Let's look at this model's assumptions and fit now.
+
+```{r richness model fit}
+plot(residuals(rich_ster_null))
+
+simulationOutput_rich <- simulateResiduals(fittedModel = rich_ster_null) 
+rich_fit <- plot(simulationOutput_rich, asFactor=TRUE)
+SRzi <- testZeroInflation(simulationOutput_rich) #not zero-inflated
+SRod <- testDispersion(simulationOutput_rich) #but mildly overdispersed
+summary(rich_ster_null)
+```
+
+Based on model diagnostics, these data are mildly overdispersed, so we'll fit negative binomial distributions to the data instead. 
+
+```{r richness models nb, include=TRUE}
+rich_ster_mod3 <- glm.nb(SR ~ surf_ster*pipeline,
+                    data = all_rich)
+
+rich_ster_mod4 <- glm.nb(SR ~ surf_ster + pipeline,
+                    data = all_rich)
+
+rich_ster_null2 <- glm.nb(SR ~ pipeline,
+                    data = all_rich)
+
+AICc(rich_ster_mod3, rich_ster_mod4, rich_ster_null2) #null still best fit
+
+```
+
+
+```{r nb richness model fit}
+plot(residuals(rich_ster_null2))
+
+simulationOutput_rich2 <- simulateResiduals(fittedModel = rich_ster_null2) 
+rich_fit2 <- plot(simulationOutput_rich2, asFactor=TRUE)
+SRzi <- testZeroInflation(simulationOutput_rich2) #not zero-inflated
+SRod <- testDispersion(simulationOutput_rich2) #not overdispersed either
+summary(rich_ster_null2)
+
+AICc(rich_ster_null, rich_ster_null2)
+```
+
+The best model is the null model not including surface sterilization with a negative binomial distribution (to fix mild overdispersion).
+
+```{r visualze richness, include=TRUE, echo=FALSE}
+(d <- ggplot(all_rich, aes(x = Sterilized, y = SR, fill = Sterilized)) +
+  geom_boxplot() + theme_bw() +
+  labs(x = "Surface sterilization", y = "Prey richness", 
+       title = "Per sample prey richness by sterilization") +
+  scale_fill_manual(values = c("#7B8D65","#F29979")) +
+  theme(legend.position = "none") + 
+  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")))
+```
+
+
+```{r richness average}
+all_rich %>%
+  ungroup() %>%
+  summarize(mean = mean(SR), min = min(SR), max = max(SR))
+```
+
+#### Summary: Surface sterilization does not significantly alter prey DNA richness across samples. Prey richness is, on average 1.7 prey species per sample, with a minimum of 0 and a maximum of 6 prey species in an individual sample. 
+
+##3. Prey DNA abundance
+
+```{r prey abund models, include=TRUE}
+abund_ster_mod <- glm(abund ~ surf_ster*pipeline,
+                    data = all_abund, 
+                    family = poisson)
+
+abund_ster_mod2 <- glm(abund ~ surf_ster + pipeline,
+                    data = all_abund, 
+                    family = poisson)
+
+abund_ster_null <- glm(abund ~ pipeline,
+                    data = all_abund, 
+                    family = poisson)
+
+AICc(abund_ster_mod, abund_ster_mod2, abund_ster_null)
+```
+
+Based on these models, the full model with the interaction is the best fit, but let's see if it is a good model. 
+
+```{r abund model fit}
+plot(residuals(abund_ster_mod))
+
+simulationOutput_abund <- simulateResiduals(fittedModel = abund_ster_mod) 
+abund_fit <- plot(simulationOutput_abund, asFactor=TRUE) #ver BAD
+abundzi <- testZeroInflation(simulationOutput_abund) #eek
+abundod <- testDispersion(simulationOutput_abund) #eek
+```
+
+Based on these diagnostics, we need to try to fit a NB distribution, since these data are very overdispersed.
+
+```{r nb prey abund models}
+abund_ster_mod3 <- glm.nb(abund ~ surf_ster*pipeline,
+                    data = all_abund)
+
+abund_ster_mod4 <- glm.nb(abund ~ surf_ster + pipeline,
+                    data = all_abund)
+
+abund_ster_null2 <- glm.nb(abund ~ pipeline,
+                    data = all_abund)
+
+AICc(abund_ster_mod3, abund_ster_mod4, abund_ster_null2)
+```
+
+Based on these models, now, the null model is the best model fit, which does not include surface sterilization as a predictor of prey read abundance. Let's check model fits again.
+
+```{r nb abund model fit}
+plot(residuals(abund_ster_null2))
+
+simulationOutput_abund2 <- simulateResiduals(fittedModel = abund_ster_null2) 
+abund_fit2 <- plot(simulationOutput_abund2, asFactor=TRUE) #sort of better?
+abundzi2 <- testZeroInflation(simulationOutput_abund2) #better
+abundod2 <- testDispersion(simulationOutput_abund2) #better
+
+summary(abund_ster_null2)
+```
+
+
+```{r visualize abundance, include=TRUE, echo=FALSE}
+all_abund_sum <- all_abund %>%
+  group_by(Sterilized) %>%
+  summarize(mean = mean(abund), n(), se = sd(abund)/sqrt(`n()`))
+
+(e <- ggplot(all_abund_sum, aes(x = Sterilized, y = mean, fill = Sterilized)) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = mean-se, ymax=mean+se), width = 0.2) +
+  labs(x = "Surface sterilization treatment", y = "Rarefied prey reads", title = "Number of prey reads per sample") +
+  theme_bw() + scale_fill_manual(values = c("#7B8D65","#F29979")) + theme(legend.position = "none") +
+  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")))
+
+```
+
+
+```{r abund average}
+all_abund %>%
+  ungroup() %>%
+  summarize(mean = mean(abund), min = min(abund), max = max(abund))
+```
+
+#### Summary: Surface sterilization does not significantly alter prey DNA abundance across samples. Prey DNA abundance in a sample is, on average, around 230 reads, with a minimum of 0 and a maximum of around 4100 reads in an individual sample. 
+
+#Zooming in; changes in community composition:
+
+We are now going to look at finer-scale patterns of community composition in our samples. Specifically, we are going to explore whether surface sterilization changes the community composition of our samples (looking at the rarefied data, since this is a measure of beta diversity). Again, roughly half of the samples were surface sterilized and the other half were not surface sterilized. Furthermore, we ran two different bioinformatic algorithms on ALL samples. We will be looking at prey community composition *per sample* and how sterilization may alter community composition.
+      
+  1. Jaccard presence-absence community analysis of rarefied prey DNA
+  
+      **glmer/glmmTMB(presence ~ surface_sterilization x algorithm + (1 + surface_sterilization | prey_species), family = binomial)** 
+  
+  2. Jaccard presence-absence of rarefied core prey (think about abundance in an individual sample plus presence across samples when assigning core prey)
+  
+      **glmer/glmmTMB(presence ~ surface_sterilization x algorithm + (1 + surface_sterilization | prey_species), family = binomial)**
+  
+  For models, we we will do model selection altering just the surface sterilization term, since this is the term we are interested in in the model. This full model is asking whether surface sterilization or denoising algorithm matter for changing community composition, and whether the relationship with them varies depending on the algorithm considered. Additionally, the random slopes term for surface sterilization is allowing the by-species slope of the relationship of surface steriliation to vary, which means that some species can be *more* abundant while others can be *less* abundant when samples were surface sterilized.
+  
+##Jaccard dissimilarity
+
+Levels for ID with jaccard dissimilarity.
+
+```{r rarefied jaccard, include = TRUE}
+rare_jacc_u3 <- comm_u3 %>%
+  dplyr::select(unique_ID, sample, reads, Sterilized) %>% #select factors of interest
+  ungroup() %>% #ungroup any grouping variables
+  group_by(sample, unique_ID, Sterilized) %>% #regroup by sample, taxonomiy, and sterilizaion
+  summarize(reads = sum(reads)) %>% #summarize the number of reads of each unique taxonomy acros samples
+  mutate(pipeline = "u3", presence = ifelse(reads > 0, 1, 0)) #add pipeline so we could combine with each other, and then also create a presence column
+ 
+#replace Oxya with Acrididae to talk to the Dada2 dataframe below
+rare_jacc_u3$unique_ID <- as.character(rare_jacc_u3$unique_ID)
+rare_jacc_u3$unique_ID <- ifelse(rare_jacc_u3$unique_ID == "Oxya", "Acrididae", rare_jacc_u3$unique_ID)
+
+#Dada2 now
+rare_jacc_d2 <- comm_d2 %>%
+  dplyr::select(unique_ID, sample, reads, Sterilized) %>%
+  ungroup() %>% #ungroup any grouping variables
+  group_by(sample, unique_ID, Sterilized) %>% #regroup by sample, taxonomiy, and sterilizaion
+  summarize(reads = sum(reads)) %>% #summarize the number of reads of each unique taxonomy acros samples
+  mutate(pipeline = "d2", presence = ifelse(reads > 0, 1, 0)) #add pipeline so we could combine with each other, and then also create a presence column
+rare_jacc_d2$unique_ID <- as.character(rare_jacc_d2$unique_ID)
+
+rare_jacc <- rare_jacc_u3 %>%
+  bind_rows(rare_jacc_d2) %>%
+  ungroup() %>%
+  mutate(unique_ID = as.factor(unique_ID))
+
+levels(rare_jacc$unique_ID)
+```
+
+Some of these IDs now have zero values across all samples in the rarefied dataset, so let's remove those before we do our analyses: 
+
+```{r remove zeros, include =TRUE}
+present_rare <- rare_jacc %>%
+  group_by(unique_ID) %>%
+  tally(reads > 0) %>%
+  filter(n > 0) #27 of 32 uniques have non-zero values across all samples in rarefied dataset
+```
+
+
+```{r jaccard at ID level, include=TRUE}
+rare_jacc2 <- present_rare %>%
+  left_join(rare_jacc, by = "unique_ID")
+
+rare_jacc2$surf_ster <- ifelse(rare_jacc2$Sterilized == "NS", 0,1)
+  
+jacc_model1 <- glmer(presence ~ surf_ster*pipeline + (1+surf_ster|unique_ID), 
+                     data = rare_jacc2,
+                     family = "binomial")
+
+jacc_model2 <- glmer(presence ~ surf_ster + pipeline + (1+surf_ster|unique_ID), 
+                     data = rare_jacc2,
+                     family = "binomial")
+
+
+jacc_model_null <- glmer(presence ~ pipeline + (1 | unique_ID), 
+                     data = rare_jacc2,
+                     family = "binomial")
+
+AICc(jacc_model1, jacc_model2, jacc_model_null)
+```
+
+The null seems to be the best fit, which does not include surface sterilization as a random or fixed effect. 
+
+```{r summary jaccard rare}
+summary(jacc_model_null)
+binned_residuals(jacc_model_null)
+```
+
+```{r model jaccard fit}
+simulationOutput_jacc <- simulateResiduals(fittedModel = jacc_model_null)
+jacc_fit <- plot(simulationOutput_jacc, asFactor=TRUE)
+```
+
+The best model does not include surface sterilization after removing uniques that are zeros across all samples when rarefied.
+
+```{r effects plot of ID, include=TRUE}
+jacc_graph1_u3 <- rare_jacc2 %>%
+  filter(pipeline == "u3") %>%
+  filter(unique_ID != "Acrididae") %>%
+  group_by(unique_ID, Sterilized) %>%
+  summarize(mean = mean(presence), sd = sd(presence)) %>%
+  ungroup() %>%
+  group_by(unique_ID) %>%
+  pivot_wider(names_from = c(Sterilized),
+              values_from = c(mean, sd)) %>%
+  mutate(se_NS = sd_NS/sqrt(19), se_SS = sd_SS/sqrt(18))
+
+es_ID_u3 <- esc_mean_se(grp1m = jacc_graph1_u3$mean_NS, grp1se = jacc_graph1_u3$se_NS, grp1n = 19,
+  grp2m = jacc_graph1_u3$mean_SS, grp2se = jacc_graph1_u3$se_SS, grp2n = 18, es.type = "g")
+
+IDs <- as.character(jacc_graph1_u3$unique_ID)
+Hedges_g <- es_ID_u3$es
+Lower_CI <- es_ID_u3$ci.lo
+Upper_CI <- es_ID_u3$ci.hi
+
+effects <- as.data.frame(cbind(IDs, Hedges_g, Lower_CI, Upper_CI))
+
+effects$Hedges_g <- as.numeric(as.character(effects$Hedges_g))
+effects$Lower_CI <- as.numeric(as.character(effects$Lower_CI))
+effects$Upper_CI <- as.numeric(as.character(effects$Upper_CI))
+
+u3_effect_graph <- ggplot(effects, aes(x = IDs, y = Hedges_g)) +
+  geom_point() +theme_bw() +geom_hline(yintercept = 0) +
+  geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
+  labs(title = "UNOISE3 effect size of average presence") +
+  theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
+u3_effect_graph
+
+#Dada2
+jacc_graph1_d2 <- rare_jacc2 %>%
+  filter(pipeline == "d2") %>%
+  group_by(unique_ID, Sterilized) %>%
+  summarize(mean = mean(presence), sd = sd(presence)) %>%
+  ungroup() %>%
+  group_by(unique_ID) %>%
+  pivot_wider(names_from = c(Sterilized),
+              values_from = c(mean, sd)) %>%
+  mutate(se_NS = sd_NS/sqrt(19), se_SS = sd_SS/sqrt(18))
+
+es_d2 <- esc_mean_se(grp1m = jacc_graph1_d2$mean_NS, grp1se = jacc_graph1_d2$se_NS, grp1n = 19,
+  grp2m = jacc_graph1_d2$mean_SS, grp2se = jacc_graph1_d2$se_SS, grp2n = 18, es.type = "g")
+
+IDs <- as.character(jacc_graph1_d2$unique_ID)
+Hedges_g <- es_d2$es
+Lower_CI <- es_d2$ci.lo
+Upper_CI <- es_d2$ci.hi
+
+effects_d2 <- as.data.frame(cbind(IDs, Hedges_g, Lower_CI, Upper_CI))
+
+effects_d2$Hedges_g <- as.numeric(as.character(effects_d2$Hedges_g))
+effects_d2$Lower_CI <- as.numeric(as.character(effects_d2$Lower_CI))
+effects_d2$Upper_CI <- as.numeric(as.character(effects_d2$Upper_CI))
+
+d2_effect_graph <- ggplot(effects_d2, aes(x = IDs, y = Hedges_g)) +
+  geom_point() +theme_bw() +geom_hline(yintercept = 0) +
+  geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
+  labs(title = "DADA2 effect size of average presence") +
+  theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
+
+plot_grid(u3_effect_graph, d2_effect_graph)
+```
+
+```{r community dissimilarity at order level, include=TRUE}
+u3_comm_ord <- u3_comm_rare_f %>%
+  left_join(u3_id_all, by = "ASV") %>%
+  filter(taxonomy == "prey") %>%
+  dplyr::select(-taxonomy)
+
+#UNOISE3
+#make the ID columns characters for the ifelse statements below
+u3_comm_ord$Order_ncbi <- as.character(u3_comm_ord$Order_ncbi)
+u3_comm_ord$ID_ncbi <- as.character(u3_comm_ord$ID_ncbi)
+
+#ifelse statements prioritizing NCBI since there are more.
+Orders_u3 <- ifelse(u3_comm_ord$Order_ncbi == "", u3_comm_ord$ID_ncbi,
+                    u3_comm_ord$Order_ncbi)
+#Orders_u3
+
+#make this a dataframe so we can attach it back to the community
+#matrix for analyses at the sample level and later Jaccard dissimiliarity
+Orders_u3 <- as.data.frame(Orders_u3)
+Orders_u3$ASV <- u3_comm_ord$ASV
+Orders_u3 <- rename(Orders_u3, "unique_order" = "Orders_u3")
+unique_Orders_u3 <- as.data.frame(unique(Orders_u3[c("unique_order")]))
+unique_Orders_u3$sp_number <- seq.int(nrow(unique_Orders_u3))
+
+ords_comm_u3 <- Orders_u3 %>%
+  left_join(unique_Orders_u3, by = "unique_order") %>%
+  left_join(u3_comm_ord, by = "ASV") %>%
+  gather(sample, reads, HEV65:HEV100) %>%
+  left_join(metadata, by = "sample") %>%
+  ungroup() %>%
+  group_by(sample, unique_order, Sterilized) %>%
+  summarize(reads = sum(reads)) %>%
+  mutate(pipeline = "u3", presence = ifelse(reads > 0, 1, 0)) %>%
+  group_by(unique_order) %>%
+  filter(sum(presence) > 0) #from 518 to 407, removed 3 orders?
+
+#DADA2
+d2_comm_ord <- d2_comm_rare_f %>%
+  left_join(d2_id_all, by = "ASV") %>%
+  filter(taxonomy == "prey") %>%
+  dplyr::select(-taxonomy) ##55 observations of 46 variables
+
+#make the ID columns characters for the ifelse statements below
+d2_comm_ord$Order_bold <- as.character(d2_comm_ord$Order_bold)
+d2_comm_ord$Order_ncbi <- as.character(d2_comm_ord$Order_ncbi)
+d2_comm_ord$Order_nondiet <- as.character(d2_comm_ord$Order_nondiet)
+d2_comm_ord$ID_ncbi <- as.character(d2_comm_ord$ID_ncbi)
+
+#ifelse statements prioritizing the orders from ncbi, since there are more
+Orders_d2 <- ifelse(is.na(d2_comm_ord$ID_ncbi), d2_comm_ord$Order_nondiet,
+                    ifelse(d2_comm_ord$Order_ncbi == "" | is.na(d2_comm_ord$Order_ncbi),
+                    d2_comm_ord$ID_ncbi, d2_comm_ord$Order_ncbi))
+#Orders_d2
+
+#make this a dataframe so we can attach it back to the community
+#matrix for analyses at the sample level and later Jaccard dissimiliarity
+Orders_d2 <- as.data.frame(Orders_d2)
+Orders_d2$ASV <- d2_comm_ord$ASV
+Orders_d2 <- rename(Orders_d2, "unique_order" = "Orders_d2")
+unique_Orders_d2 <- as.data.frame(unique(Orders_d2[c("unique_order")]))
+unique_Orders_d2$sp_number <- seq.int(nrow(unique_Orders_d2))
+
+ords_comm_d2 <- Orders_d2 %>%
+  left_join(unique_Orders_d2, by = "unique_order") %>%
+  left_join(d2_comm_ord, by = "ASV") %>%
+  gather(sample, reads, HEV65:HEV100) %>%
+  left_join(metadata, by = "sample") %>%
+  ungroup() %>%
+  group_by(sample, unique_order, Sterilized) %>%
+  summarize(reads = sum(reads)) %>%
+  mutate(pipeline = "d2", presence = ifelse(reads > 0, 1, 0)) %>%
+  group_by(unique_order) %>%
+  filter(sum(presence) > 0) #removed from 555 to 407
+
+orders_comm <- ords_comm_u3 %>%
+  bind_rows(ords_comm_d2) %>%
+    ungroup() %>%
+  mutate(unique_order = as.factor(unique_order), surf_ster=ifelse(Sterilized == "NS", 0, 1)) 
+
+levels(orders_comm$unique_order)
+```
+
+```{r jaccard order level, include=TRUE}
+jacc_ord_model1 <- glmer(presence ~ surf_ster*pipeline + (1+surf_ster|unique_order), 
+                     data = orders_comm,
+                     family = "binomial")
+
+jacc_ord_model2 <- glmer(presence ~ surf_ster + pipeline + (1+surf_ster|unique_order), 
+                     data = orders_comm,
+                     family = "binomial")
+
+jacc_ord_null <- glmer(presence ~ pipeline + (1|unique_order), 
+                     data = orders_comm,
+                     family = "binomial")
+
+AICc(jacc_ord_model1, jacc_ord_model2, jacc_ord_null)
+```
+
+```{r summary jaccard order}
+summary(jacc_ord_null)
+binned_residuals(jacc_ord_null)
+```
+
+```{r model jaccard fit order}
+simulationOutput_rjacc <- simulateResiduals(fittedModel = jacc_ord_null)
+rjacc_fit <- plot(simulationOutput_rjacc, asFactor=TRUE)
+```
+
+```{r graph order}
+orders_graph_data_u3 <- orders_comm %>%
+  filter(!unique_order %in% c("Squamata", "Coleoptera")) %>%
+  filter(pipeline == "u3") %>%
+  group_by(unique_order, Sterilized) %>%
+  summarize(mean = mean(presence), sd = sd(presence)) %>%
+  ungroup() %>%
+  group_by(unique_order) %>%
+  mutate(se = ifelse(Sterilized == "NS", sd/sqrt(19), sd/sqrt(18)))
+
+orders_graph_data_d2 <- orders_comm %>%
+  filter(!unique_order %in% c("Squamata", "Coleoptera")) %>%
+  filter(pipeline == "d2") %>%
+  group_by(unique_order, Sterilized) %>%
+  summarize(mean = mean(presence), sd = sd(presence)) %>%
+  ungroup() %>%
+  group_by(unique_order) %>%
+  mutate(se = ifelse(Sterilized == "NS", sd/sqrt(19), sd/sqrt(18)))
+
+u3_order_graph <- ggplot(orders_graph_data_u3, aes(x =unique_order, y = mean, fill = Sterilized)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+   theme_bw() +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean +se), width = 0.2, position = position_dodge(0.9)) +
+  labs(x = "Diet order", y = "Presence in population") +
+    scale_fill_manual(values = c("#7B8D65","#F29979")) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+d2_order_graph <- ggplot(orders_graph_data_d2, aes(x =unique_order, y = mean, fill = Sterilized)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+   theme_bw() +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean +se), width = 0.2, position = position_dodge(0.9)) +
+  labs(x = "Diet order", y = "Presence in population") +
+    scale_fill_manual(values = c("#7B8D65","#F29979")) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+plot_grid(u3_order_graph, d2_order_graph)
+```
+
+```{r effects plot of order, echo=FALSE, include=TRUE}
+orders_graph_data3_u3 <- orders_comm %>%
+  filter(pipeline == "u3") %>%
+  filter(!unique_order %in% c("Squamata", "Coleoptera")) %>%
+  group_by(unique_order, Sterilized) %>%
+  summarize(mean = mean(presence), sd = sd(presence)) %>%
+  ungroup() %>%
+  group_by(unique_order) %>%
+  pivot_wider(names_from = c(Sterilized),
+              values_from = c(mean, sd)) %>%
+  mutate(se_NS = sd_NS/sqrt(19), se_SS = sd_SS/sqrt(18))
+
+es_u3 <- esc_mean_se(grp1m = orders_graph_data3_u3$mean_NS, grp1se = orders_graph_data3_u3$se_NS, grp1n = 19,
+  grp2m = orders_graph_data3_u3$mean_SS, grp2se = orders_graph_data3_u3$se_SS, grp2n = 18, es.type = "g")
+
+Orders <- as.character(orders_graph_data3_u3$unique_order)
+Hedges_g <- es_u3$es
+Lower_CI <- es_u3$ci.lo
+Upper_CI <- es_u3$ci.hi
+
+effects <- as.data.frame(cbind(Orders, Hedges_g, Lower_CI, Upper_CI))
+
+effects$Hedges_g <- as.numeric(as.character(effects$Hedges_g))
+effects$Lower_CI <- as.numeric(as.character(effects$Lower_CI))
+effects$Upper_CI <- as.numeric(as.character(effects$Upper_CI))
+
+u3_effect_graph <- ggplot(effects, aes(x = Orders, y = Hedges_g)) +
+  geom_point() +theme_bw() +geom_hline(yintercept = 0) +
+  geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
+  labs(title = "UNOISE3 surface sterilization effect size of average presence") +
+  theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
+
+#Dada2
+orders_graph_data3_d2 <- orders_comm %>%
+  filter(pipeline == "d2") %>%
+  filter(!unique_order %in% c("Squamata", "Coleoptera")) %>%
+  group_by(unique_order, Sterilized) %>%
+  summarize(mean = mean(presence), sd = sd(presence)) %>%
+  ungroup() %>%
+  group_by(unique_order) %>%
+  pivot_wider(names_from = c(Sterilized),
+              values_from = c(mean, sd)) %>%
+  mutate(se_NS = sd_NS/sqrt(19), se_SS = sd_SS/sqrt(18))
+
+es_d2 <- esc_mean_se(grp1m = orders_graph_data3_d2$mean_NS, grp1se = orders_graph_data3_d2$se_NS, grp1n = 19,
+  grp2m = orders_graph_data3_d2$mean_SS, grp2se = orders_graph_data3_d2$se_SS, grp2n = 18, es.type = "g")
+
+Orders <- as.character(orders_graph_data3_d2$unique_order)
+Hedges_g <- es_d2$es
+Lower_CI <- es_d2$ci.lo
+Upper_CI <- es_d2$ci.hi
+
+effects_d2 <- as.data.frame(cbind(Orders, Hedges_g, Lower_CI, Upper_CI))
+
+effects_d2$Hedges_g <- as.numeric(as.character(effects_d2$Hedges_g))
+effects_d2$Lower_CI <- as.numeric(as.character(effects_d2$Lower_CI))
+effects_d2$Upper_CI <- as.numeric(as.character(effects_d2$Upper_CI))
+
+d2_effect_graph <- ggplot(effects_d2, aes(x = Orders, y = Hedges_g)) +
+  geom_point() +theme_bw() +geom_hline(yintercept = 0) +
+  geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
+  labs(title = "DADA2 surface sterilization effect size of average presence") +
+  theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
+
+
+plot_grid(u3_effect_graph, d2_effect_graph)
+```
+
+For core prey, I need 1. presence across all samples, 2. abundance in each sample. I think I need to think about some of these measures and see what the Shade et al. (2019) paper did.
+
+```{r core prey, include=TRUE, out.width = '100%'}
+across_samples <- rare_jacc2 %>%
+  group_by(unique_ID) %>%
+  tally(reads > 0) %>%
+  rename("samples_present" = "n") %>%
+  mutate(proportion = samples_present/37)
+
+mean_abund <- rare_jacc2 %>%
+  group_by(unique_ID) %>%
+  summarize(mean_abund = mean(reads), log_mean_abund = log10(mean(reads)))
+
+core_prey <- across_samples %>%
+  left_join(mean_abund, by = "unique_ID")
+
+core_prey_raw <- rare_jacc2 %>%
+  left_join(across_samples, by = "unique_ID") %>%
+  filter(reads > 0)
+  
+ggplot(core_prey, aes(x = mean_abund, y = proportion, color = unique_ID)) +
+  geom_point(size = 3) + theme_bw() +
+  labs(x = "Mean prey abundance per predator", y = "Proportion of predator diets", title = "Abundance-occupancy distribution of prey") +
+  scale_x_log10()
+
+ggplot(core_prey_raw, aes(x = reads, y = proportion, color = unique_ID)) +
+  geom_point(size = 3) + theme_bw() +
+  labs(x = "Prey abundance per predator", y = "Proportion of predator diets", title = "Abundance-occupancy distribution of prey") +
+  scale_x_log10()
+
+```
+
+
+```{r dissimilarity}
+diss_u3 <- u3_comm_rare_f
+rownames(diss_u3) <- u3_comm_rare_f$ASV
+diss_u3 <- diss_u3 %>%
+  dplyr::select(-ASV) 
+
+dissm_u3 <- as.data.frame(t(diss_u3))
+dissm_u3 <- dissm_u3[which(colSums(dissm_u3) > 0) ] #176 to 135
+dissm_u3 <- dissm_u3[which(rowSums(dissm_u3) > 0), ] #37, none removed
+dissm_u3 <- as.matrix(dissm_u3)
+
+# Identify distance matrix to use
+rank.result <- rankindex(as.matrix(sqrt(dissm_u3)), dissm_u3, indices = c("bray", "euclid", "manhattan", "horn"), method = "spearman")
+print(paste("The highest rank was given by the", names(sort(rank.result, decreasing = TRUE)[1]), "method."))
+
+bray_u3 <- vegdist(dissm_u3, method = "bray")
+
+dist.mat.nmds_u3 <- metaMDS(bray_u3, trymax = 2000, k = 2, autotransform = FALSE, noshare = (engine = "isoMDS"), maxit = 1000, weakties = TRUE)
+
+#DADA2
+diss_d2 <- d2_comm_rare_f
+rownames(diss_d2) <- d2_comm_rare_f$ASV
+diss_d2 <- diss_d2 %>%
+  dplyr::select(-ASV) 
+
+dissm_d2 <- as.data.frame(t(diss_d2))
+dissm_d2 <- dissm_d2[which(colSums(dissm_d2) > 0) ] #214 to 118
+dissm_d2 <- dissm_d2[which(rowSums(dissm_d2) > 0), ] #37, none removed
+dissm_d2 <- as.matrix(dissm_d2)
+
+# Identify distance matrix to use
+rank.result <- rankindex(as.matrix(sqrt(dissm_d2)), dissm_d2, indices = c("bray", "euclid", "manhattan", "horn"), method = "spearman")
+print(paste("The highest rank was given by the", names(sort(rank.result, decreasing = TRUE)[1]), "method."))
+
+bray_d2 <- vegdist(dissm_d2, method = "bray")
+
+dist.mat.nmds <- metaMDS(bray_d2, trymax = 2000, k = 2, autotransform = FALSE, noshare = (engine = "isoMDS"), maxit = 1000, weakties = TRUE)
+
+stressplot(dist.mat.nmds) 
+dist.mat.nmds$stress 
+
+stressplot(dist.mat.nmds_u3) 
+dist.mat.nmds_u3$stress 
+
+comm_u3 %>%
+  group_by(sample, unique_ID) %>%
+  summarise(reads = sum(reads))
+```
+
+
+```{r raw sequencing depth, eval = FALSE}
+u3_depth <- u3_comm %>%
+  dplyr::select(all_of(field)) %>%
+  gather(sample, reads, HEV65:HEV100) %>%
+  group_by(sample) %>%
+  summarise(reads = sum(reads)) %>%
+  left_join(metadata, by = "sample") %>%
+  mutate(pipeline = "u3")
+
+d2_depth <- d2_comm %>%
+  dplyr::select(all_of(field)) %>%
+  gather(sample, reads, HEV65:HEV100) %>%
+  group_by(sample) %>%
+  summarise(reads = sum(reads)) %>%
+  left_join(metadata, by = "sample") %>%
+  mutate(pipeline = "d2")
+
+u3_depth$surf_ster <- ifelse(u3_depth$Sterilized == "NS", 0, 1)
+
+depth_u3_mod <- glmmTMB(reads ~ surf_ster,
+                    data = u3_depth,
+                 family = truncated_genpois)
+
+depth_u3_mod_null <- glmmTMB(reads ~ 1,
+                    data = u3_depth,
+                 family = truncated_genpois)
+
+AICc(depth_u3_mod, depth_u3_mod_null) 
+
+simulationOutput <- simulateResiduals(fittedModel = depth_u3_mod_null) 
+fit <- plot(simulationOutput) 
+predzi <- testZeroInflation(simulationOutput) 
+predod <- testDispersion(simulationOutput)
+plot(residuals(depth_u3_mod))
+
+d2_depth$surf_ster <- ifelse(d2_depth$Sterilized == "NS", 0, 1)
+
+depth_d2_mod <- glmmTMB(reads ~ surf_ster,
+                    data = d2_depth,
+                 family = truncated_genpois)
+
+depth_d2_mod_null <- glmmTMB(reads ~ 1,
+                    data = d2_depth,
+                 family = truncated_nbinom1)
+
+
+AICc(depth_d2_mod, depth_d2_mod_null) 
+
+simulationOutput <- simulateResiduals(fittedModel = depth_d2_mod_null) 
+fit <- plot(simulationOutput) 
+predzi <- testZeroInflation(simulationOutput) 
+predod <- testDispersion(simulationOutput)
+plot(residuals(depth_d2_mod))
+
+plot(allEffects(depth_d2_mod))
+model.emm <- emmeans(depth_d2_mod, "surf_ster")
+pairs(model.emm)
+
+all_depth <- u3_depth %>%
+  bind_rows(d2_depth) %>%
+  group_by(Sterilized, pipeline) %>%
+  summarise(mean= mean(reads), total = n(), se = sd(reads)/sqrt(total))
+
+(depth <- ggplot(all_depth, aes(x = Sterilized, y = mean, fill = Sterilized)) +
+  geom_bar(stat="identity", position= "dodge") +theme_bw() +
+  labs(x = "Surface sterilization treatment", y = "Total sequencing depth",
+       title = "Sequencing depth by surface sterilization and algorithm") +
+  scale_fill_manual(values = c("#7B8D65","#F29979")) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean +se), width = 0.2) +
+    scale_y_sqrt() +
+  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) + facet_wrap(~pipeline))
+```
+
+```{r adonis abundance}
+meta_field <- metadata %>%
+  filter(Source == "FIELD")
+adonis(dissm_d2 ~ Sterilized, data = meta_field, dist = "bray")
+
+adonis(dissm_u3 ~ Sterilized, data = meta_field, dist = "bray")
+```
+#Overall summary {#summary}
+
+## Ecological interpretations {#ecology}
+
+                                 

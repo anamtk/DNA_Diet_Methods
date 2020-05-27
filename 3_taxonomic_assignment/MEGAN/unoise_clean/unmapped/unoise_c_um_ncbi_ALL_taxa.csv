@@ -1,0 +1,23 @@
+ASV,ID,Level,Kingdom,Phylum,Class,Order,Family,Genus,Species
+Zotu35,Eukaryota,higher,,,,,,,
+Zotu10,Acanthamoeba,Genus,,Amoebozoa,,,,,
+Zotu32,Diderma,,Fungi,,,,,,
+Zotu2,Hortaea thailandica,,Fungi,,,,,,
+Zotu3,Dothideales,,Fungi,,,,,,
+Zotu17,Albatrellus,,Fungi,,,,,,
+Zotu47,Cortinarius cf. violaceus TRTC155606,,Fungi,,,,,,
+Zotu1,Tremellales,,Fungi,,,,,,
+Zotu74,Rhodotorula,,Fungi,,,,,,
+Zotu40,Rhodotorula mucilaginosa,,Fungi,,,,,,
+Zotu4,Bilateria,higher,,,,,,,
+Zotu14,Bilateria,higher,,,,,,,
+Zotu44,Homo sapiens,Species,Animalia,Chordata,Mammalia,Primates,Hominidae,Homo,Homo sapiens
+Zotu48,Homo sapiens,Species,Animalia,Chordata,Mammalia,Primates,Hominidae,Homo,Homo sapiens
+Zotu54,Homo sapiens,Species,Animalia,Chordata,Mammalia,Primates,Hominidae,Homo,Homo sapiens
+Zotu59,Homo sapiens,Species,Animalia,Chordata,Mammalia,Primates,Hominidae,Homo,Homo sapiens
+Zotu65,Homo sapiens,Species,Animalia,Chordata,Mammalia,Primates,Hominidae,Homo,Homo sapiens
+Zotu16,Lepidodactylus,Genus,Animalia,Chordata,Reptilia,Squamata,Gekkonidae,Lepidodactylus,
+Zotu72,Centruroides sculpturatus,Species,Animalia,Arthropoda,Arachnida,Scorpiones,Buthidae,Centruroides,Centruroides sculpturatus
+Zotu11,Neoptera,Subclass,Animalia,Arthropoda,Insecta,,,,
+Zotu22,Xiphydria sp. ZJUH 2008002,Genus,Animalia,Arthropoda,Insecta,Hymenoptera,Xiphydriidae,Xiphydria,
+Zotu5,Rhodymeniophycidae,,Plantae,,,,,,

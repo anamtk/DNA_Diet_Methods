@@ -1,0 +1,54 @@
+Query ID,ID,Level,Kingdom,Phylum,Class,Order,Family,Genus,Species
+ASV_108,Anchiphiloscia pilosa,Species,Animalia,Arthropoda,Malacostraca,Isopoda,Philosciidae,Anchiphiloscia,Anchiphiloscia pilosa
+ASV_5,Anisolabis maritima,Species,Animalia,Arthropoda,Insecta,Dermaptera,Anisolabididae,Anisolabis,Anisolabis maritima
+ASV_114,Aspergillus niger,Species,Fungi,,Eurotiomycetes,Eurotiales,Trichocomaceae,Aspergillus,Aspergillus niger
+ASV_211,Cochliopodium sp.,Genus,,,Discosea,Himatismenida,Cochliopodiidae,Cochliopodium,
+ASV_34,Conoderus pallipes,Species,Animalia,Arthropoda,Insecta,Coleoptera,Elateridae,Conoderus,Conoderus pallipes
+ASV_48,Diploptera punctata,Species,Animalia,Arthropoda,Insecta,Blattodea,Blaberidae,Diploptera,Diploptera punctata
+ASV_145,Erechthias simulans,Species,Animalia,Arthropoda,Insecta,Lepidoptera,Tineidae,Erechthias,Erechthias simulans
+ASV_12,Hasarius adansoni,Species,Animalia,Arthropoda,Arachnida,Araneae,Salticidae,Hasarius,Hasarius adansoni
+ASV_1,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_3,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_8,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_13,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_22,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_25,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_29,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_31,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_32,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_36,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_46,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_53,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_64,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_67,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_89,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_98,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_105,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_136,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_140,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_159,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_166,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_189,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_213,Heteropoda venatoria,Species,Animalia,Arthropoda,Arachnida,Araneae,Sparassidae,Heteropoda,Heteropoda venatoria
+ASV_96,Limonia perkinsi,Species,Animalia,Arthropoda,Insecta,Diptera,Tipulidae,Limonia,Limonia perkinsi
+ASV_163,Linepithema humile,Species,Animalia,Arthropoda,Insecta,Hymenoptera,Formicidae,Linepithema,Linepithema humile
+ASV_86,Neurospora crassa,Species,Fungi,Ascomycota,Sordariomycetes,Sordariales,Sordariaceae,Neurospora,Neurospora crassa
+ASV_76,Ornebius novarae,Species,Animalia,Arthropoda,Insecta,Orthoptera,Mogoplistidae,Ornebius,Ornebius novarae
+ASV_80,Ornebius novarae,Species,Animalia,Arthropoda,Insecta,Orthoptera,Mogoplistidae,Ornebius,Ornebius novarae
+ASV_156,Ornebius novarae,Species,Animalia,Arthropoda,Insecta,Orthoptera,Mogoplistidae,Ornebius,Ornebius novarae
+ASV_97,Pantala flavescens,Species,Animalia,Arthropoda,Insecta,Odonata,Libellulidae,Pantala,Pantala flavescens
+ASV_38,Penicillium citrinum,Species,Fungi,,Eurotiomycetes,Eurotiales,Trichocomaceae,Penicillium,Penicillium citrinum
+ASV_18,Periplaneta australasiae,Species,Animalia,Arthropoda,Insecta,Blattodea,Blattidae,Periplaneta,Periplaneta australasiae
+ASV_93,Periplaneta australasiae,Species,Animalia,Arthropoda,Insecta,Blattodea,Blattidae,Periplaneta,Periplaneta australasiae
+ASV_77,Phisis holdhausi,Species,Animalia,Arthropoda,Insecta,Orthoptera,Tettigoniidae,Phisis,Phisis holdhausi
+ASV_150,Phisis holdhausi,Species,Animalia,Arthropoda,Insecta,Orthoptera,Tettigoniidae,Phisis,Phisis holdhausi
+ASV_111,Phytophthora nicotianae,Species,Fungi,,Oomycota,Peronosporales,Peronosporaceae,Phytophthora,Phytophthora nicotianae
+ASV_15,Pycnoscelus,Genus,Animalia,Arthropoda,Insecta,Blattodea,Blaberidae,Pycnoscelus,
+ASV_20,Pycnoscelus surinamensis,Species,Animalia,Arthropoda,Insecta,Blattodea,Blaberidae,Pycnoscelus,Pycnoscelus surinamensis
+ASV_47,Pycnoscelus surinamensis,Species,Animalia,Arthropoda,Insecta,Blattodea,Blaberidae,Pycnoscelus,Pycnoscelus surinamensis
+ASV_147,Pycnoscelus surinamensis,Species,Animalia,Arthropoda,Insecta,Blattodea,Blaberidae,Pycnoscelus,Pycnoscelus surinamensis
+ASV_169,Pycnoscelus surinamensis,Species,Animalia,Arthropoda,Insecta,Blattodea,Blaberidae,Pycnoscelus,Pycnoscelus surinamensis
+ASV_139,Saccharomyces cerevisiae YJM1527,Species,Fungi,,Saccharomycetes,Saccharomycetales,Saccharaomycetaceae,Saccharomyces,Saccharomyces cerevisiae
+ASV_4,Scholastes lonchifer,Species,Animalia,Arthropoda,Insecta,Diptera,Platystomatidae,Scholastes,Scholastes lonchifer
+ASV_50,Scholastes lonchifer,Species,Animalia,Arthropoda,Insecta,Diptera,Platystomatidae,Scholastes,Scholastes lonchifer
+ASV_65,Scholastes lonchifer,Species,Animalia,Arthropoda,Insecta,Diptera,Platystomatidae,Scholastes,Scholastes lonchifer

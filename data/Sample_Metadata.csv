@@ -1,0 +1,57 @@
+Method,Island,Year,ID,Date Collected ,sample,dada2_sample,unoise_sample,Size,Extract. Date,Sterilized,Source
+Hand,Cooper,2017,Heteropoda venatoria,7/29/17,HEV07,HEV07_S47,HEV07,15.5,3/14/18,SS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,7/29/17,HEV10,HEV10_S37,HEV10,16.9,3/14/18,SS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/7/17,HEV11,HEV11_S38,HEV11,17.6,3/14/18,SS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/2/17,HEV12,HEV12_S44,HEV12,17.8,3/14/18,SS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,7/29/17,HEV13,HEV13_S49,HEV13,18.6,3/14/18,SS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/2/17,HEV14,HEV14_S50,HEV14,18.8,3/14/18,SS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/19/17,HEV15,HEV15_S51,HEV15,20.2,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/7/17,HEV16,HEV16_S45,HEV16,20.9,3/14/18,SS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/7/17,HEV17,HEV17_S39,HEV17,21,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/19/17,HEV18,HEV18_S46,HEV18,21.1,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/16/17,HEV20,HEV20_S27,HEV20,21.4,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/19/17,HEV21,HEV21_S52,HEV21,22.1,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/2/17,HEV22,HEV22_S53,HEV22,22.6,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/14/17,HEV23,HEV23_S48,HEV23,24.3,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/16/17,HEV24,HEV24_S41,HEV24,24.3,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/14/17,HEV25,HEV25_S42,HEV25,24.6,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/16/17,HEV26,HEV26_S43,HEV26,24.7,3/14/18,NS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/7/17,HEV27,HEV27_S29,HEV27,25.4,3/14/18,SS,LAB
+Hand,Cooper,2017,Heteropoda venatoria,8/14/17,HEV29,HEV29_S28,HEV29,27.5,3/14/18,NS,LAB
+Hand,Fern 5,2016,Heteropoda venatoria,,HEV65,HEV65_S54,HEV65,22.6,10/23/18,SS,FIELD
+Hand,Fern 4,2016,Heteropoda venatoria,,HEV66,HEV66_S55,HEV66,17.2,10/23/18,SS,FIELD
+Hand,Fern 10,2016,Heteropoda venatoria,,HEV67,HEV67_S56,HEV67,19.1,10/23/18,SS,FIELD
+Hand,Fern 7,2016,Heteropoda venatoria,,HEV68,HEV68_S57,HEV68,13.2,10/23/18,SS,FIELD
+Hand,Fern 8,2016,Heteropoda venatoria,,HEV70,HEV70_S58,HEV70,17.7,10/23/18,SS,FIELD
+Hand,Leslie 3,2016,Heteropoda venatoria,,HEV71,HEV71_S59,HEV71,21.2,10/23/18,SS,FIELD
+Hand,Leslie 11,2016,Heteropoda venatoria,,HEV74,HEV74_S60,HEV74,19.5,10/23/18,SS,FIELD
+Hand,Leslie 13,2016,Heteropoda venatoria,,HEV76,HEV76_S35,HEV76,16.2,10/23/18,SS,FIELD
+Hand,Fern 6,2016,Heteropoda venatoria,,HEV79,HEV79_S33,HEV79,18.4,10/23/18,NS,FIELD
+Hand,Leslie 6,2016,Heteropoda venatoria,,HEV81,HEV81_S36,HEV81,16,10/23/18,NS,FIELD
+Hand,Leslie 5,2016,Heteropoda venatoria,,HEV82,HEV82_S40,HEV82,15.6,10/23/18,NS,FIELD
+Hand,Leslie 2,2016,Heteropoda venatoria,,HEV83,HEV83_S34,HEV83,21.3,10/23/18,NS,FIELD
+Hand,Leslie 8,2016,Heteropoda venatoria,,HEV87,HEV87_S30,HEV87,16.3,10/23/18,NS,FIELD
+Hand,Leslie 4,2016,Heteropoda venatoria,,HEV88,HEV88_S31,HEV88,20.1,10/23/18,NS,FIELD
+Hand,Leslie 1,2016,Heteropoda venatoria,,HEV89,HEV89_S32,HEV89,23.8,10/23/18,NS,FIELD
+Hand,Holei 1,2015,Heteropoda venatoria,,HEV101,HEV.101_S23,HEV101,16.7,10/28/19,SS,FIELD
+Hand,Holei 2,2015,Heteropoda venatoria,,HEV102,HEV.102_S1,HEV102,12.2,10/28/19,SS,FIELD
+Hand,Holei 3,2015,Heteropoda venatoria,,HEV103,HEV.103_S2,HEV103,13.5,10/28/19,SS,FIELD
+Hand,Holei 4,2015,Heteropoda venatoria,,HEV104,HEV.104_S3,HEV104,13.2,10/28/19,SS,FIELD
+Hand,Holei 5,2015,Heteropoda venatoria,,HEV105,HEV.105_S4,HEV105,13.4,10/28/19,SS,FIELD
+Hand,Holei 6,2015,Heteropoda venatoria,,HEV106,HEV.106_S5,HEV106,15,10/28/19,NS,FIELD
+Hand,Holei 7,2015,Heteropoda venatoria,,HEV107,HEV.107_S6,HEV107,11.4,10/28/19,NS,FIELD
+Hand,Holei 8,2015,Heteropoda venatoria,,HEV108,HEV.108_S7,HEV108,11.5,10/28/19,NS,FIELD
+Hand,Holei 9,2015,Heteropoda venatoria,,HEV109,HEV.109_S8,HEV109,12.8,10/28/19,NS,FIELD
+Hand,Holei 10,2015,Heteropoda venatoria,,HEV110,HEV.110_S9,HEV110,9.8,10/28/19,NS,FIELD
+Hand,Holei 11,2015,Heteropoda venatoria,,HEV111,HEV.111_S10,HEV111,7.4,10/28/19,NS,FIELD
+Hand,East 1,2015,Heteropoda venatoria,,HEV90,HEV.90_S12,HEV90,14.1,10/28/19,SS,FIELD
+Hand,East 2,2015,Heteropoda venatoria,,HEV91,HEV.91_S13,HEV91,17.5,10/28/19,SS,FIELD
+Hand,East 3,2015,Heteropoda venatoria,,HEV92,HEV.92_S14,HEV92,20.5,10/28/19,SS,FIELD
+Hand,East 4,2015,Heteropoda venatoria,,HEV93,HEV.93_S15,HEV93,10.2,10/28/19,SS,FIELD
+Hand,East 5,2015,Heteropoda venatoria,,HEV94,HEV.94_S16,HEV94,14.5,10/28/19,SS,FIELD
+Hand,East 6,2015,Heteropoda venatoria,,HEV95,HEV.95_S17,HEV95,13.4,10/28/19,NS,FIELD
+Hand,East 7,2015,Heteropoda venatoria,,HEV96,HEV.96_S18,HEV96,15.9,10/28/19,NS,FIELD
+Hand,East 8,2015,Heteropoda venatoria,,HEV97,HEV.97_S19,HEV97,14.5,10/28/19,NS,FIELD
+Hand,East 9,2015,Heteropoda venatoria,,HEV98,HEV.98_S20,HEV98,22.2,10/28/19,NS,FIELD
+Hand,East 10,2015,Heteropoda venatoria,,HEV99,HEV.99_S21,HEV99,20.1,10/28/19,NS,FIELD
+Hand,East 11,2015,Heteropoda venatoria,,HEV100,HEV.100_S22,HEV100,16.7,10/28/19,NS,FIELD
