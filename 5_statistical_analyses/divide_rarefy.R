@@ -45,7 +45,7 @@ comm_lab <- comm_lab %>%
   dplyr::select(all_of(lab)) #select just lab samples
 
 #write this to an output
-write.csv(comm_lab, here("data", "outputs", "lab_comm_raw.csv"))
+write.csv(comm_lab, here("data", "outputs", "divide_rarefy", "lab_comm_raw.csv"))
 
 #do the same for field, creating a new dataframe of just field samples
 comm_field <- comm
@@ -54,7 +54,7 @@ comm_field <- comm_field %>%
   dplyr::select(all_of(field)) #select just field samples
 
 #write this to an output
-write.csv(comm_field, here("data", "outputs", "field_comm_raw.csv"))
+write.csv(comm_field, here("data", "outputs", "divide_rarefy", "field_comm_raw.csv"))
 
 ###########################
 # Rarefy field and lab separately
@@ -102,5 +102,6 @@ colSums(field_comm_rare)
 
 #output the rarefied community dataframes for analysis later
 
-write.csv(lab_comm_rare, here("data", "outputs", "lab_comm_rare.csv"))
-write.csv(field_comm_rare, here("data", "outputs", "field_comm_rare.csv"))
+write.csv(lab_comm_rare, here("data", "outputs", "divide_rarefy", "lab_comm_rare.csv"))
+write.csv(field_comm_rare, here("data", "outputs", "divide_rarefy", "field_comm_rare.csv"))
+

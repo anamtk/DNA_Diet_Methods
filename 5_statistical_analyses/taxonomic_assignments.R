@@ -94,4 +94,4 @@ id_tab$taxonomy <- replace_na(id_tab$taxonomy, "no hit")
 taxonomies <- id_tab %>%
   dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, taxonomy)
 
-write.csv(taxonomies, here("data", "outputs", "taxonomic_assignments.csv"))
+write.csv(taxonomies, here("data", "outputs", "taxonomic_assignments", "taxonomic_assignments.csv"))
