@@ -130,18 +130,3 @@ fld_zeros <- field_rare %>%
 
 field_rare <- field_rare %>%
   anti_join(fld_zeros, by = "unique_ID") #anti join to remove the IDs that are zero across all smaples
-
-##########################
-#species richness of prey in each pipeline
-all_rich <- test %>%
-  group_by(sample, unique_ID, Sterilized) %>%
-  summarize(reads = sum(reads)) %>% #this summarizes reads by each sp in each sample
-  ungroup() %>%
-  group_by(sample, Sterilized) %>% #then if we group by just sample, can count number of >0
-  summarize(SR = sum(reads > 0, na.rm=TRUE)) %>% #count number of species >0
-  mutate(pipeline = "u3") #add pipeline column to bind later
-
-all_abund <- test %>%
-  group_by(sample, Sterilized) %>% 
-  summarize(abund = sum(reads)) %>% #this counts total abundance of prey reads in a sample
-  mutate(pipeline = "u3", presence = ifelse(abund > 0, 1, 0)) #this says wheter prey detected
