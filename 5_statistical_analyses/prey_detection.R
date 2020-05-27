@@ -139,6 +139,9 @@ field_detect %>%
   ungroup() %>%
   summarise(total = n(), presence = sum(presence), detection = presence/total)
 
-#both plots to export
+###########################
+# Plot to export ####
+############################
+
 plot_grid(a, c, nrow= 2)
   
