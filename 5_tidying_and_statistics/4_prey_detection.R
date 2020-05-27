@@ -124,7 +124,7 @@ prey_presence <- field_detect %>%
   group_by(Sterilized) %>%
   summarise(total = n(), presence = sum(presence), detection = presence/total)
 
-(c <- ggplot(prey_presence, aes(x = Sterilized, y = detection)) +
+(c <- ggplot(prey_presence, aes(x = Sterilized, y = detection*100)) +
     geom_bar(stat="identity", position= "dodge", fill = "#F29979", color = "black") +theme_bw() +
     labs(x = "Surface sterilization treatment", y = "Prey ASV detection (%)") +
     scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) +
@@ -143,5 +143,5 @@ field_detect %>%
 # Plot to export ####
 ############################
 
-plot_grid(a, c, nrow= 2)
+plot_grid(a, c, nrow= 2, align = "hv")
   
