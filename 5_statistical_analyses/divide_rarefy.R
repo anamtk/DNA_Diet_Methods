@@ -1,6 +1,6 @@
 ########################
 # Ana Miller-ter Kuile
-#Rarefaction and subset mesocosm from field####
+#Rarefaction and subset mesocosm from field ####
 # May 27, 2020
 ########################
 
