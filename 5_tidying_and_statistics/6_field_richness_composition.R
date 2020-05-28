@@ -1,5 +1,5 @@
 ###########################
-# Richness Analyses ####
+# FIeld Richness Analyses ####
 # Ana Miller-ter Kuile
 # May 27, 2020 
 ############################
@@ -17,26 +17,12 @@
 library(here) #tidy data
 library(tidyverse) #tidy data
 library(ggplot2) #visualize data
-library(effects) #dotplots and stuff
-#library(lattice) #again dotplots
 library(DHARMa) #model diagnostics
 library(MuMIn) #model diagnostics
 library(glmmTMB) #mixed models
-#library(lme4) #mixed models
-#library(ggeffects) #ggpredict function
 library(performance) #for binomail model fit
-#library(see) #for binomial model fit
-#library(coin) #wilcoxon test
-#library(MASS) #glm.nb
-library(vegan) #rrarefy and adonis
-library(cowplot) #plot grid at end
-#library(picante) #phylogenetic analyses
-#library(ape) #phylogenetic analyses
-#library(phytools) #phylogenetic analyses
-#library(phyloseq) #phylogenetic analyses
-#library(hciR) #for as_matrix function
+library(vegan) #adonis
 library(esc) #effect sizes
-#library(effsize) #alternative effect size package
 
 ###########################
 # Load data ####
@@ -128,9 +114,87 @@ binned_residuals(comp_null)
 simulationOutput <- simulateResiduals(fittedModel = comp_null)
 fit <- plot(simulationOutput, asFactor=TRUE)
 
-
 ###########################
-# Field Abundance-based composition analysis (PERMANOVA)####
+# Heat map visualization of both presence and abundance ####
+#(At order level for clarity)
+############################
+heat <- field
+
+#make order and ID values characters for ifelse sorting to order level below
+heat$Order_ncbi <- as.character(heat$Order_ncbi)
+heat$unique_ID <- as.character(heat$unique_ID)
+
+#ifelse statements creating an overall "Order" column for visualization
+heat$Order <- ifelse(heat$Order_ncbi == "", heat$unique_ID,
+                    heat$Order_ncbi)
+
+#now we can summarise heat by order and sterilization treatment for
+#the heatmap graph
+heat <- heat %>%
+  group_by(Order, Sterilized) %>% #group by order and sterilization treatment
+  summarise(reads = mean(reads)) %>% #then find the mean abundance for each order
+  ungroup() %>% #ungroup so we can make order a factor
+  mutate(Order = as.factor(Order)) %>% #make order a factor
+  pivot_wider(names_from = Sterilized, values_from = reads) %>% #make wide for two columns
+  #for sterilization treatment so we can arrange in descending order of abundance
+  arrange((NS + SS), (NS)) %>% #arrange in descending order of abundance
+  mutate(Order = factor(Order, levels = Order)) %>% #reset the levels of order on this
+  #new abundance-based ordering of the Order factor
+  gather(Sterilized, reads, NS:SS) #gather DF back up for visualization
+
+#Because read abundance has such a broad range, we want to set a quantile-based
+#variable for these abundances for the color ramp in the graph, but also want
+#to discount the effects of zero reads in this, so we will create a DF of non-zero
+#values for reads, and then find quantiles of this to inform our quantiles for the figure
+heat_map_nz <- heat %>%
+  filter(reads > 0)
+quantile(heat_map_nz$reads)
+#0.2222222   0.5031676   2.8961988   9.7087719 120.5555556 
+
+#now we can set a quantile variable in our DF
+heat$quantiles <- ifelse(heat$reads == 0, 0,
+                             ifelse(heat$reads > 0 & heat$reads <= 0.2222222, 1, 
+                                    ifelse(heat$reads > 0.2222222 & heat$reads <= 0.5031676, 2,
+                                           ifelse(heat$reads > 0.5031676 & heat$reads <= 2.8961988, 3,
+                                                  ifelse(heat$reads > 2.8961988 & heat$reads <= 9.7087719, 4, 5)))))
+
+#making it a factor for visualization
+heat$quantiles <- as.factor(heat$quantiles)  
+
+#these are two color palettes that could be used in this figure
+pal <- c(
+  '0' = "#FFFFFF",
+  '1' = "#F27D72", 
+  '2' = "#D26F67", 
+  '3' = "#B2615C",
+  '4' = "#925451",
+  '5' = "#734646"
+)
+
+pal2 <- c(
+  '0' = "#FFFFFF",
+  '1' = "#F29979", 
+  '2' = "#D2846C", 
+  '3' = "#B26F5F",
+  '4' = "#925B53",
+  '5' = "#734646"
+)
+
+heat_map <- ggplot(heat, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
+  geom_tile() + 
+  coord_equal() +
+  labs(x = "Surface sterilization treatment", y = "Diet group") +
+  scale_x_discrete(labels=c("NS" = "Not Sterilized", "SS" = "Surface Sterilized")) +
+  scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
+                    values = pal2,
+                    limits = names(pal2),
+                    labels = c("0", "< 0.2", "< 0.5", "< 2.9", "< 9.7", "< 120.6")) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#0.2222222   0.5031676   2.8961988   9.7087719 120.5555556 
+###########################
+# (SUPPLEMENT: Field Abundance-based composition analysis (PERMANOVA))####
 ############################
 
 #We set up the GLMM in a really similar way, only this time we use read
@@ -177,88 +241,9 @@ fit <- plot(simulationOutput, asFactor=TRUE)
 zi <- testZeroInflation(simulationOutput) 
 od <- testDispersion(simulationOutput) 
 
-###########################
-# Heat map visualization of both presence and abundance ####
-#(At order level for clarity)
-############################
-heat <- field
-
-#make order and ID values characters for ifelse sorting to order level below
-heat$Order_ncbi <- as.character(heat$Order_ncbi)
-heat$unique_ID <- as.character(heat$unique_ID)
-
-#ifelse statements creating an overall "Order" column for visualization
-heat$Order <- ifelse(heat$Order_ncbi == "", heat$unique_ID,
-                    heat$Order_ncbi)
-
-#now we can summarise heat by order and sterilization treatment for
-#the heatmap graph
-heat <- heat %>%
-  group_by(Order, Sterilized) %>% #group by order and sterilization treatment
-  summarise(reads = mean(reads)) %>% #then find the mean abundance for each order
-  ungroup() %>% #ungroup so we can make order a factor
-  mutate(Order = as.factor(Order)) %>% #make order a factor
-  pivot_wider(names_from = Sterilized, values_from = reads) %>% #make wide for two columns
-  #for sterilization treatment so we can arrange in descending order of abundance
-  arrange((NS + SS), (NS)) %>% #arrange in descending order of abundance
-  mutate(Order = factor(Order, levels = Order)) %>% #reset the levels of order on this
-  #new abundance-based ordering of the Order factor
-  gather(Sterilized, reads, NS:SS) #gather DF back up for visualization
-
-#Because read abundance has such a broad range, we want to set a quantile-based
-#variable for these abundances for the color ramp in the graph, but also want
-#to discount the effects of zero reads in this, so we will create a DF of non-zero
-#values for reads, and then find quantiles of this to inform our quantiles for the figure
-heat_map_nz <- heat %>%
-  filter(reads > 0)
-quantile(heat_map_nz$reads)
-quantile(heat$reads)
-#0.2222222   0.5031676   2.8961988   9.7087719 120.5555556 
-
-#now we can set a quantile variable in our DF
-heat$quantiles <- ifelse(heat$reads == 0, 0,
-                             ifelse(heat$reads > 0 & heat$reads <= 0.2222222, 1, 
-                                    ifelse(heat$reads > 0.2222222 & heat$reads <= 0.5031676, 2,
-                                           ifelse(heat$reads > 0.5031676 & heat$reads <= 2.8961988, 3,
-                                                  ifelse(heat$reads > 2.8961988 & heat$reads <= 9.7087719, 4, 5)))))
-
-#making it a factor for visualization
-heat$quantiles <- as.factor(heat$quantiles)  
-
-#these are two color palettes that could be used in this figure
-pal <- c(
-  '0' = "#FFFFFF",
-  '1' = "#F27D72", 
-  '2' = "#D26F67", 
-  '3' = "#B2615C",
-  '4' = "#925451",
-  '5' = "#734646"
-)
-
-pal2 <- c(
-  '0' = "#FFFFFF",
-  '1' = "#F29979", 
-  '2' = "#D2846C", 
-  '3' = "#B26F5F",
-  '4' = "#925B53",
-  '5' = "#734646"
-)
-
-ggplot(heat, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
-  geom_tile() + 
-  coord_equal() +
-  labs(x = "Surface sterilization treatment", y = "Diet group") +
-  scale_x_discrete(labels=c("NS" = "Not Sterilized", "SS" = "Surface Sterilized")) +
-  scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
-                    values = pal2,
-                    limits = names(pal2),
-                    labels = c("0", "< 0.1", "< 0.7", "< 2.8", "< 21.6", "< 219.5")) + 
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 
 ###########################
-# Effect Sizes Presence graph ####
+# (SUPPLEMENT: Effect Sizes Presence graph) ####
 ############################
 
 #This is a graph of the effect sizes of presence-absence between surface sterilized 
@@ -309,14 +294,14 @@ effects1 <- effects %>%
 
 #this is the visualization, with the IDs at the top being most present on average
 #and decreasing abundance as you go to the bottom of the graph
-ggplot(effects1, aes(x = IDs, y = Hedges_g)) +
+pres_effect_f <- ggplot(effects1, aes(x = IDs, y = Hedges_g)) +
   geom_point() +theme_bw() +geom_hline(yintercept = 0) +
   geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
   labs(title = "UNOISE3 effect size of average presence") +
   theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
 
 ###########################
-# Effect Sizes Abundance graph ####
+# (SUPPLEMENT) Effect Sizes Abundance graph ####
 ############################
 
 #Same as above, just with abundance data instead
@@ -368,14 +353,14 @@ effects_abund1 <- effects_abund %>%
 
 #this is the visualization, with the IDs at the top being most abundant
 #and decreasing abundance as you go to the bottom of the graph
-ggplot(effects_abund1, aes(x = IDs, y = Hedges_g)) +
+abund_effect_f <- ggplot(effects_abund1, aes(x = IDs, y = Hedges_g)) +
   geom_point() +theme_bw() +geom_hline(yintercept = 0) +
   geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
   labs(title = "UNOISE3 effect size of average abundance") +
   theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
 
 ###########################
-# adonis instead of GLMM for field presence ####
+# (OPTIONAL: adonis instead of GLMM for field presence) ####
 ############################
 
 #An alternative to the above approach is to use ADONIS from the vegan package instead
