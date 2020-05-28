@@ -181,76 +181,51 @@ od <- testDispersion(simulationOutput)
 # Heat map visualization of both presence and abundance ####
 #(At order level for clarity)
 ############################
-taxonomies <- read.csv(here("data", "outputs", "taxonomic_assignments", "taxonomic_assignments.csv"))
+heat <- field
 
-u3_comm_ord <- u3_comm_rare_f %>%
-  left_join(u3_id_all, by = "ASV") %>%
-  filter(taxonomy == "prey") %>%
-  dplyr::select(-taxonomy)
+#make order and ID values characters for ifelse sorting to order level below
+heat$Order_ncbi <- as.character(heat$Order_ncbi)
+heat$unique_ID <- as.character(heat$unique_ID)
 
-#UNOISE3
-#make the ID columns characters for the ifelse statements below
-u3_comm_ord$Order_ncbi <- as.character(u3_comm_ord$Order_ncbi)
-u3_comm_ord$ID_ncbi <- as.character(u3_comm_ord$ID_ncbi)
+#ifelse statements creating an overall "Order" column for visualization
+heat$Order <- ifelse(heat$Order_ncbi == "", heat$unique_ID,
+                    heat$Order_ncbi)
 
-#ifelse statements prioritizing NCBI since there are more.
-Orders_u3 <- ifelse(u3_comm_ord$Order_ncbi == "", u3_comm_ord$ID_ncbi,
-                    u3_comm_ord$Order_ncbi)
-#Orders_u3
+#now we can summarise heat by order and sterilization treatment for
+#the heatmap graph
+heat <- heat %>%
+  group_by(Order, Sterilized) %>% #group by order and sterilization treatment
+  summarise(reads = mean(reads)) %>% #then find the mean abundance for each order
+  ungroup() %>% #ungroup so we can make order a factor
+  mutate(Order = as.factor(Order)) %>% #make order a factor
+  pivot_wider(names_from = Sterilized, values_from = reads) %>% #make wide for two columns
+  #for sterilization treatment so we can arrange in descending order of abundance
+  arrange((NS + SS), (NS)) %>% #arrange in descending order of abundance
+  mutate(Order = factor(Order, levels = Order)) %>% #reset the levels of order on this
+  #new abundance-based ordering of the Order factor
+  gather(Sterilized, reads, NS:SS) #gather DF back up for visualization
 
-#make this a dataframe so we can attach it back to the community
-#matrix for analyses at the sample level and later Jaccard dissimiliarity
-Orders_u3 <- as.data.frame(Orders_u3)
-Orders_u3$ASV <- u3_comm_ord$ASV
-Orders_u3 <- rename(Orders_u3, "unique_order" = "Orders_u3")
-unique_Orders_u3 <- as.data.frame(unique(Orders_u3[c("unique_order")]))
-unique_Orders_u3$sp_number <- seq.int(nrow(unique_Orders_u3))
-
-ords_comm_u3 <- Orders_u3 %>%
-  left_join(unique_Orders_u3, by = "unique_order") %>%
-  left_join(u3_comm_ord, by = "ASV") %>%
-  gather(sample, reads, HEV65:HEV100) %>%
-  left_join(metadata, by = "sample") %>%
-  ungroup() %>%
-  group_by(sample, unique_order, Sterilized) %>%
-  summarize(reads = sum(reads)) %>%
-  mutate(pipeline = "u3", presence = ifelse(reads > 0, 1, 0)) %>%
-  group_by(unique_order) %>%
-  filter(sum(presence) > 0) #from 518 to 407, removed 3 orders?
-
-
-orders_comm <- ords_comm_u3 %>%
-  ungroup() %>%
-  mutate(unique_order = as.factor(unique_order), surf_ster=ifelse(Sterilized == "NS", 0, 1)) 
-
-levels(orders_comm$unique_order)
-
-heat_map <- orders_comm %>%
-  group_by(unique_order, Sterilized) %>%
-  summarise(reads = mean(reads)) %>%
-  mutate(presence = ifelse(reads > 0, 1, 0))
-
-heat_map_nz <- heat_map %>%
+#Because read abundance has such a broad range, we want to set a quantile-based
+#variable for these abundances for the color ramp in the graph, but also want
+#to discount the effects of zero reads in this, so we will create a DF of non-zero
+#values for reads, and then find quantiles of this to inform our quantiles for the figure
+heat_map_nz <- heat %>%
   filter(reads > 0)
 quantile(heat_map_nz$reads)
+quantile(heat$reads)
+#0.2222222   0.5031676   2.8961988   9.7087719 120.5555556 
 
-heat_map <- heat_map %>%
-  ungroup() %>%
-  dplyr::select(Sterilized, unique_order, reads) %>%
-  pivot_wider(names_from = Sterilized, values_from = reads) %>%
-  arrange((NS + SS), (NS)) %>%
-  mutate(unique_order=factor(unique_order, levels=unique_order)) %>%
-  gather(Sterilized, reads, NS:SS) 
+#now we can set a quantile variable in our DF
+heat$quantiles <- ifelse(heat$reads == 0, 0,
+                             ifelse(heat$reads > 0 & heat$reads <= 0.2222222, 1, 
+                                    ifelse(heat$reads > 0.2222222 & heat$reads <= 0.5031676, 2,
+                                           ifelse(heat$reads > 0.5031676 & heat$reads <= 2.8961988, 3,
+                                                  ifelse(heat$reads > 2.8961988 & heat$reads <= 9.7087719, 4, 5)))))
 
+#making it a factor for visualization
+heat$quantiles <- as.factor(heat$quantiles)  
 
-heat_map$quantiles <- ifelse(heat_map$reads == 0, 0,
-                             ifelse(heat_map$reads > 0 & heat_map$reads <= 0.1052632, 1, 
-                                    ifelse(heat_map$reads > 0.1052632 & heat_map$reads <= 0.7456140, 2,
-                                           ifelse(heat_map$reads > 0.7456140 & heat_map$reads <= 2.8128655, 3,
-                                                  ifelse(heat_map$reads > 2.8128655 & heat_map$reads <= 21.5614035, 4, 5)))))
-
-heat_map$quantiles <- as.factor(heat_map$quantiles)  
-
+#these are two color palettes that could be used in this figure
 pal <- c(
   '0' = "#FFFFFF",
   '1' = "#F27D72", 
@@ -269,7 +244,7 @@ pal2 <- c(
   '5' = "#734646"
 )
 
-heat_map_graph <- ggplot(heat_map, aes(x = Sterilized, y = unique_order, fill=quantiles, height = 0.95, width = 0.95)) +
+ggplot(heat, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
   geom_tile() + 
   coord_equal() +
   labs(x = "Surface sterilization treatment", y = "Diet group") +
