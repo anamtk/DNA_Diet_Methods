@@ -178,6 +178,228 @@ zi <- testZeroInflation(simulationOutput)
 od <- testDispersion(simulationOutput) 
 
 ###########################
+# Heat map visualization of both presence and abundance ####
+#(At order level for clarity)
+############################
+taxonomies <- read.csv(here("data", "outputs", "taxonomic_assignments", "taxonomic_assignments.csv"))
+
+u3_comm_ord <- u3_comm_rare_f %>%
+  left_join(u3_id_all, by = "ASV") %>%
+  filter(taxonomy == "prey") %>%
+  dplyr::select(-taxonomy)
+
+#UNOISE3
+#make the ID columns characters for the ifelse statements below
+u3_comm_ord$Order_ncbi <- as.character(u3_comm_ord$Order_ncbi)
+u3_comm_ord$ID_ncbi <- as.character(u3_comm_ord$ID_ncbi)
+
+#ifelse statements prioritizing NCBI since there are more.
+Orders_u3 <- ifelse(u3_comm_ord$Order_ncbi == "", u3_comm_ord$ID_ncbi,
+                    u3_comm_ord$Order_ncbi)
+#Orders_u3
+
+#make this a dataframe so we can attach it back to the community
+#matrix for analyses at the sample level and later Jaccard dissimiliarity
+Orders_u3 <- as.data.frame(Orders_u3)
+Orders_u3$ASV <- u3_comm_ord$ASV
+Orders_u3 <- rename(Orders_u3, "unique_order" = "Orders_u3")
+unique_Orders_u3 <- as.data.frame(unique(Orders_u3[c("unique_order")]))
+unique_Orders_u3$sp_number <- seq.int(nrow(unique_Orders_u3))
+
+ords_comm_u3 <- Orders_u3 %>%
+  left_join(unique_Orders_u3, by = "unique_order") %>%
+  left_join(u3_comm_ord, by = "ASV") %>%
+  gather(sample, reads, HEV65:HEV100) %>%
+  left_join(metadata, by = "sample") %>%
+  ungroup() %>%
+  group_by(sample, unique_order, Sterilized) %>%
+  summarize(reads = sum(reads)) %>%
+  mutate(pipeline = "u3", presence = ifelse(reads > 0, 1, 0)) %>%
+  group_by(unique_order) %>%
+  filter(sum(presence) > 0) #from 518 to 407, removed 3 orders?
+
+
+orders_comm <- ords_comm_u3 %>%
+  ungroup() %>%
+  mutate(unique_order = as.factor(unique_order), surf_ster=ifelse(Sterilized == "NS", 0, 1)) 
+
+levels(orders_comm$unique_order)
+
+heat_map <- orders_comm %>%
+  group_by(unique_order, Sterilized) %>%
+  summarise(reads = mean(reads)) %>%
+  mutate(presence = ifelse(reads > 0, 1, 0))
+
+heat_map_nz <- heat_map %>%
+  filter(reads > 0)
+quantile(heat_map_nz$reads)
+
+heat_map <- heat_map %>%
+  ungroup() %>%
+  dplyr::select(Sterilized, unique_order, reads) %>%
+  pivot_wider(names_from = Sterilized, values_from = reads) %>%
+  arrange((NS + SS), (NS)) %>%
+  mutate(unique_order=factor(unique_order, levels=unique_order)) %>%
+  gather(Sterilized, reads, NS:SS) 
+
+
+heat_map$quantiles <- ifelse(heat_map$reads == 0, 0,
+                             ifelse(heat_map$reads > 0 & heat_map$reads <= 0.1052632, 1, 
+                                    ifelse(heat_map$reads > 0.1052632 & heat_map$reads <= 0.7456140, 2,
+                                           ifelse(heat_map$reads > 0.7456140 & heat_map$reads <= 2.8128655, 3,
+                                                  ifelse(heat_map$reads > 2.8128655 & heat_map$reads <= 21.5614035, 4, 5)))))
+
+heat_map$quantiles <- as.factor(heat_map$quantiles)  
+
+pal <- c(
+  '0' = "#FFFFFF",
+  '1' = "#F27D72", 
+  '2' = "#D26F67", 
+  '3' = "#B2615C",
+  '4' = "#925451",
+  '5' = "#734646"
+)
+
+pal2 <- c(
+  '0' = "#FFFFFF",
+  '1' = "#F29979", 
+  '2' = "#D2846C", 
+  '3' = "#B26F5F",
+  '4' = "#925B53",
+  '5' = "#734646"
+)
+
+heat_map_graph <- ggplot(heat_map, aes(x = Sterilized, y = unique_order, fill=quantiles, height = 0.95, width = 0.95)) +
+  geom_tile() + 
+  coord_equal() +
+  labs(x = "Surface sterilization treatment", y = "Diet group") +
+  scale_x_discrete(labels=c("NS" = "Not Sterilized", "SS" = "Surface Sterilized")) +
+  scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
+                    values = pal2,
+                    limits = names(pal2),
+                    labels = c("0", "< 0.1", "< 0.7", "< 2.8", "< 21.6", "< 219.5")) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+###########################
+# Effect Sizes Presence graph ####
+############################
+
+#This is a graph of the effect sizes of presence-absence between surface sterilized 
+#and non-surface sterilized predator individuals
+
+#Effect sizes are built off of means and either SD or SE
+effect <- comp %>%
+  group_by(unique_ID, Sterilized) %>%
+  summarize(mean = mean(presence), sd = sd(presence)) %>%
+  ungroup() %>%
+  group_by(unique_ID) %>%
+  pivot_wider(names_from = c(Sterilized),
+              values_from = c(mean, sd)) %>% #this pivots so there is an average for
+  #SS and NS groups
+  mutate(se_NS = sd_NS/sqrt(19), se_SS = sd_SS/sqrt(18)) #this computs the SE for groups
+
+#this is the overall presence of each species, which we will use to sort the 
+#graph visualization
+pres_sort <- comp %>% 
+  group_by(unique_ID) %>%
+  summarise(overall = mean(presence)) #gets the overall presence of that diet item
+
+#this computes the effect sies based on means, standared errors, and sample sizes
+es_ID <- esc_mean_se(grp1m = effect$mean_NS, grp1se = effect$se_NS, grp1n = 19,
+                        grp2m = effect$mean_SS, grp2se = effect$se_SS, grp2n = 18, es.type = "g")
+
+#extract data of interest from teh es_ID object
+IDs <- as.character(effect$unique_ID)
+Hedges_g <- es_ID$es
+Lower_CI <- es_ID$ci.lo
+Upper_CI <- es_ID$ci.hi
+
+#make into a DF
+effects <- as.data.frame(cbind(IDs, Hedges_g, Lower_CI, Upper_CI))
+
+#manipulate data types
+effects$Hedges_g <- as.numeric(as.character(effects$Hedges_g))
+effects$Lower_CI <- as.numeric(as.character(effects$Lower_CI))
+effects$Upper_CI <- as.numeric(as.character(effects$Upper_CI))
+effects$IDs <- as.factor(effects$IDs)
+
+#join this with the overall presence DF so we can order by overall
+#presence for graph visualization
+effects1 <- effects %>%
+  left_join(pres_sort, by = c("IDs" = "unique_ID")) %>%
+  arrange(overall) %>%
+  mutate(IDs=factor(IDs, levels=IDs)) 
+
+#this is the visualization, with the IDs at the top being most present on average
+#and decreasing abundance as you go to the bottom of the graph
+ggplot(effects1, aes(x = IDs, y = Hedges_g)) +
+  geom_point() +theme_bw() +geom_hline(yintercept = 0) +
+  geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
+  labs(title = "UNOISE3 effect size of average presence") +
+  theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
+
+###########################
+# Effect Sizes Abundance graph ####
+############################
+
+#Same as above, just with abundance data instead
+#This is a graph of the effect sizes of abundance between surface sterilized 
+#and non-surface sterilized predator individuals
+
+#Effect sizes are built off of means and either SD or SE
+effect_abund <- comp %>%
+  group_by(unique_ID, Sterilized) %>%
+  summarize(mean = mean(reads), sd = sd(reads)) %>%
+  ungroup() %>%
+  group_by(unique_ID) %>%
+  pivot_wider(names_from = c(Sterilized),
+              values_from = c(mean, sd)) %>% #this pivots so there is an average for
+  #SS and NS groups
+  mutate(se_NS = sd_NS/sqrt(19), se_SS = sd_SS/sqrt(18)) #this computs the SE for groups
+
+#this is the overall presence of each species, which we will use to sort the 
+#graph visualization
+abund_sort <- comp %>% 
+  group_by(unique_ID) %>%
+  summarise(overall = mean(reads)) #gets the overall average reads of that diet item
+
+#this computes the effect sies based on means, standared errors, and sample sizes
+es_ID_abund <- esc_mean_se(grp1m = effect_abund$mean_NS, grp1se = effect_abund$se_NS, grp1n = 19,
+                     grp2m = effect_abund$mean_SS, grp2se = effect_abund$se_SS, grp2n = 18, es.type = "g")
+
+#extract data of interest from teh es_ID object
+IDs <- as.character(effect_abund$unique_ID)
+Hedges_g <- es_ID_abund$es
+Lower_CI <- es_ID_abund$ci.lo
+Upper_CI <- es_ID_abund$ci.hi
+
+#make into a DF
+effects_abund <- as.data.frame(cbind(IDs, Hedges_g, Lower_CI, Upper_CI))
+
+#manipulate data types
+effects_abund$Hedges_g <- as.numeric(as.character(effects_abund$Hedges_g))
+effects_abund$Lower_CI <- as.numeric(as.character(effects_abund$Lower_CI))
+effects_abund$Upper_CI <- as.numeric(as.character(effects_abund$Upper_CI))
+effects_abund$IDs <- as.factor(effects_abund$IDs)
+
+#join this with the overall presence DF so we can order by overall
+#presence for graph visualization
+effects_abund1 <- effects_abund %>%
+  left_join(abund_sort, by = c("IDs" = "unique_ID")) %>%
+  arrange(overall) %>%
+  mutate(IDs=factor(IDs, levels=IDs)) 
+
+#this is the visualization, with the IDs at the top being most abundant
+#and decreasing abundance as you go to the bottom of the graph
+ggplot(effects_abund1, aes(x = IDs, y = Hedges_g)) +
+  geom_point() +theme_bw() +geom_hline(yintercept = 0) +
+  geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
+  labs(title = "UNOISE3 effect size of average abundance") +
+  theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
+
+###########################
 # adonis instead of GLMM for field presence ####
 ############################
 

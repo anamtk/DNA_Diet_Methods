@@ -90,7 +90,7 @@ lab_unique_ID <- lab_unique_ID %>%
 lab_prey <- lab_prey %>%
   left_join(lab_unique_ID, by = "ASV")  %>%
   gather(sample, reads, HEV07:HEV29) %>%
-  group_by(sample, unique_ID) %>%
+  group_by(sample, unique_ID, Order_ncbi) %>%
   summarise(reads = sum(reads)) %>%
   left_join(metadata, by = "sample")
 
@@ -158,7 +158,7 @@ unique_ID$ASV <- field_prey$ASV #give it an ASV column for attaching later
 field_prey <- field_prey %>%
   left_join(unique_ID, by = "ASV")  %>%
   gather(sample, reads, HEV65:HEV100) %>%
-  group_by(sample, unique_ID) %>%
+  group_by(sample, unique_ID, Order_ncbi) %>%
   summarise(reads = sum(reads)) %>%
   left_join(metadata, by = "sample")
   
