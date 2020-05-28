@@ -90,7 +90,7 @@ zi <- testZeroInflation(simulationOutput)
 od <- testDispersion(simulationOutput) 
 
 ###########################
-# Field presence-absence composition analysis ####
+# Field presence-absence composition analysis (PERMANOVA) ####
 ############################
 
 #This PERMANOVA is run like a GLMM, but we need to first verify that all samples
@@ -111,11 +111,11 @@ comp <- field %>%
 #sterilization, and others decrease)
 
 comp_mod <- glmmTMB(presence ~ Sterilized + (1+Sterilized|unique_ID), 
-                       data = comp1,
+                       data = comp,
                        family = "binomial")
 
 comp_null <- glmmTMB(presence ~ 1 + (1|unique_ID), 
-                           data = comp1,
+                           data = comp,
                            family = "binomial")
 
 AICc(comp_mod, comp_null)
@@ -127,6 +127,55 @@ summary(comp_mod) #sterilization term not significant
 binned_residuals(comp_null)
 simulationOutput <- simulateResiduals(fittedModel = comp_null)
 fit <- plot(simulationOutput, asFactor=TRUE)
+
+
+###########################
+# Field Abundance-based composition analysis (PERMANOVA)####
+############################
+
+#We set up the GLMM in a really similar way, only this time we use read
+#abundance as our dependent variable, and we use a poisson distribution,
+#since these are now count data rather than binary data
+
+#This GLMM is run by saying, how does the fixed effect of sterilization impact
+#abundance, with a random effects structure with both a random interept term
+#for unique_ID (let each species have a different intercept) and a random slopes 
+#term for surface sterilization treatment (let each species' relationship with
+#with surface sterilization differ, ie let some species increase with surface 
+#sterilization, and others decrease)
+#again, we set REML=FALSE for AIC comparison FIRST, and then refit with REML
+#for model summaries and diagnostics
+
+bray_mod <- glmmTMB(reads ~ Sterilized + (1+Sterilized|unique_ID), 
+                    data = comp,
+                    family = "genpois",
+                    REML = FALSE)
+
+bray_null <- glmmTMB(reads ~ 1 + (1|unique_ID), 
+                     data = comp,
+                     family = "genpois",
+                     REML = FALSE)
+
+AICc(bray_mod, bray_null)
+
+#refit with REML
+bray_mod <- glmmTMB(reads ~ Sterilized + (1+Sterilized|unique_ID), 
+                    data = comp,
+                    family = "genpois")
+
+bray_null <- glmmTMB(reads ~ 1 + (1|unique_ID), 
+                     data = comp,
+                     family = "genpois")
+
+summary(bray_null)
+summary(bray_mod) #sterilization term not significant
+
+#model diagnostics look good
+plot(residuals(bray_null))
+simulationOutput <- simulateResiduals(fittedModel = bray_null)
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput) 
 
 ###########################
 # adonis instead of GLMM for field presence ####
