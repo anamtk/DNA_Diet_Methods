@@ -89,7 +89,7 @@ AICc(fld_detect_mod, fld_null_model)
 
 #The sterilized term is clearly non-significant
 summary(fld_detect_mod)
-
+summary(fld_null_model)
 #assess model fits, which look pretty good:
 simulationOutput_fld <- simulateResiduals(fittedModel = fld_null_model) 
 fit_fld <- plot(simulationOutput_fld, asFactor=TRUE)

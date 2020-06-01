@@ -180,7 +180,7 @@ pal2 <- c(
   '5' = "#734646"
 )
 
-heat_map <- ggplot(heat, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
+(heat_map <- ggplot(heat, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
   geom_tile() + 
   coord_equal() +
   labs(x = "Surface sterilization treatment", y = "Diet group") +
@@ -190,7 +190,7 @@ heat_map <- ggplot(heat, aes(x = Sterilized, y = Order, fill=quantiles, height =
                     limits = names(pal2),
                     labels = c("0", "< 0.2", "< 0.5", "< 2.9", "< 9.7", "< 120.6")) + 
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
 #0.2222222   0.5031676   2.8961988   9.7087719 120.5555556 
 ###########################
@@ -358,6 +358,13 @@ abund_effect_f <- ggplot(effects_abund1, aes(x = IDs, y = Hedges_g)) +
   geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
   labs(title = "UNOISE3 effect size of average abundance") +
   theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
+
+
+###########################
+# SUPPLEMENT: Plot of effects for export####
+############################
+
+plot_grid(pres_effect_f, abund_effect_f)
 
 ###########################
 # (OPTIONAL: adonis instead of GLMM for field presence) ####
