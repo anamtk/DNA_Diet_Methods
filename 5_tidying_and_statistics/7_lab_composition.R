@@ -309,3 +309,8 @@ abund_effect_l <- ggplot(effects_abund1, aes(x = IDs, y = Hedges_g)) +
   geom_pointrange(aes(ymin = Lower_CI, ymax = Upper_CI)) +
   labs(title = "UNOISE3 effect size of average abundance") +
   theme(axis.text.x = element_text(angle=90, hjust = 1)) + coord_flip()
+
+###########################
+#Plot grid for publication ####
+############################
+plot_grid(pres_effect_l, abund_effect_l)
