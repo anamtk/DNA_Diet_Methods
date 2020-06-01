@@ -88,15 +88,15 @@ fld_all <- fld_prey %>%
 #proportions/composition when prey is detected
 
 lab_all_nz <- lab_all %>%
-  filter(prey > 0)
+  filter(known > 0)
 
-lab_mod <- glmmTMB(prey ~ Sterilized,
+lab_mod <- glmmTMB(known ~ Sterilized,
                    data = lab_all_nz,
                    offset = log(total),
                    REML = FALSE,
                    family = "genpois")
 
-lab_null <- glmmTMB(prey ~ 1,
+lab_null <- glmmTMB(known ~ 1,
                    data = lab_all_nz,
                    offset = log(total),
                    REML = FALSE,
@@ -104,12 +104,12 @@ lab_null <- glmmTMB(prey ~ 1,
 
 AICc(lab_mod, lab_null)
 
-lab_mod <- glmmTMB(prey ~ Sterilized,
+lab_mod <- glmmTMB(known ~ Sterilized,
                    data = lab_all_nz,
                    offset = log(total),
                    family = "genpois")
 
-lab_null <- glmmTMB(prey ~ 1,
+lab_null <- glmmTMB(known ~ 1,
                     data = lab_all_nz,
                     offset = log(total),
                     family = "genpois")
@@ -170,29 +170,25 @@ od <- testDispersion(simulationOutput)
 
 #These models are not nice...
 
-lab_pred_mod <- glmmTMB(pred ~ Sterilized,
+lab_pred_mod <- glmmTMB(log10(pred) ~ Sterilized,
                    data = lab_all,
-                   offset = log(total),
                    REML = FALSE,
-                   family = "genpois")
+                   family = "gaussian")
 
-lab_pred_null <- glmmTMB(pred ~ 1,
+lab_pred_null <- glmmTMB(log10(pred) ~ 1,
                     data = lab_all,
-                    offset = log(total),
                     REML = FALSE,
-                    family = "genpois")
+                    family = "gaussian")
 
 AICc(lab_pred_mod, lab_pred_null)
 
 lab_pred_mod <- glmmTMB(pred ~ Sterilized,
                         data = lab_all,
-                        offset = log(total),
-                        family = "genpois")
+                        family = "gaussian")
 
 lab_pred_null <- glmmTMB(pred ~ 1,
                          data = lab_all,
-                         offset = log(total),
-                         family = "genpois")
+                         family = "gaussian")
 
 summary(lab_pred_mod)
 plot(allEffects(lab_pred_mod))
@@ -200,8 +196,7 @@ plot(allEffects(lab_pred_mod))
 plot(residuals(lab_pred_null))
 simulationOutput <- simulateResiduals(fittedModel = lab_pred_null) 
 fit <- plot(simulationOutput, asFactor=TRUE)
-zi <- testZeroInflation(simulationOutput) 
-od <- testDispersion(simulationOutput)
+
 
 ###########################
 # Field Predator model ####
@@ -242,7 +237,7 @@ od <- testDispersion(simulationOutput)
 ggplot(fld_all, aes(x = Sterilized, y = prey/total)) +
   geom_boxplot() + theme_bw() +scale_y_log10()
 
-ggplot(lab_all, aes(x = Sterilized, y = prey/total)) +
+ggplot(lab_all, aes(x = Sterilized, y = known/total)) +
   geom_boxplot() + theme_bw() +scale_y_log10()
 
 ggplot(fld_all, aes(x = Sterilized, y = pred/total)) +
