@@ -31,7 +31,7 @@ library(effects)
 #UNOISE sequencing depth####
 #needed here: ASV matrix by samples minus the controls and asv column
 #import data matrix
-u3_comm <- read.csv(here("data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = "\t")
+u3_comm <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = "\t")
 
 #rename columns for simplicity
 colnames(u3_comm) <- sapply(str_split(colnames(u3_comm), "S"), function(x){return(x[[1]])})
@@ -59,7 +59,7 @@ u3_seq_depth$DataInfo
 u3_seq_depth_graph <- ggiNEXT(u3_seq_depth, type=1, facet.var="none", grey = T, se = F) + 
   # can set se = F to remove shaded regions to see lines better 
   theme_bw() +
-  labs(x = "Sequencing Depth", y = "ASV Richness", title = "UNOISE3 Sequencing Depth") +
+  labs(x = "Sequencing Depth", y = "ASV Richness") +
   theme(legend.position = "none", axis.text = element_text(size = 20), 
         axis.title = element_text(size = 25))
 u3_seq_depth_graph
