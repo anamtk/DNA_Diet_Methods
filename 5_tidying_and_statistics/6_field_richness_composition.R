@@ -193,6 +193,12 @@ pal2 <- c(
   theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
 #0.2222222   0.5031676   2.8961988   9.7087719 120.5555556 
+
+###########################
+# Diet species names for stats ####
+############################
+levels(comp$unique_ID)
+unique(comp$Order_ncbi)
 ###########################
 # (SUPPLEMENT: Field Abundance-based composition analysis (PERMANOVA))####
 ############################
