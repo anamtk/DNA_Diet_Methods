@@ -205,6 +205,12 @@ lab_all_nz %>%
   summarise(prop = known/total) %>%
   summarise(mean = mean(prop), total= n(), sd = sd(prop), se = sd/sqrt(total))
 
+max(lab_all_nz$prey)/55205
+min(lab_all_nz$prey)/55205
+
+max(fld_all_nz$prey)/16004
+min(fld_all_nz$prey)/16004
+00.006248438
 fld_all_nz %>%
   summarise(prop = prey/total) %>%
   summarise(mean = mean(prop), total= n(), sd = sd(prop), se = sd/sqrt(total))
