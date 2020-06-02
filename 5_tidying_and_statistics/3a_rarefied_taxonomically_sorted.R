@@ -192,3 +192,34 @@ field_predator <- field_rare %>%
 
 write.csv(field_predator, here("data", "outputs", "rarefied_taxonomic_sort", "field_predator_rare.csv"))
 
+##########################
+# Lab: Non-diet ####
+##########################
+lab_nondiet <- lab_rare %>%
+  rename("ASV" = "X") %>%
+  left_join(taxonomies, by = "ASV") %>% #combine with taxonomy DF
+  filter(taxonomy == "non-diet") %>% #select non-diet only
+  dplyr::select(-ID_bold, -ID_ncbi) %>% #remove taxonomy columns
+  group_by(ASV) %>% 
+  gather(sample, reads, HEV07:HEV29, factor_key = TRUE) %>% #make long while grouped by ASV
+  group_by(sample) %>%
+  summarise(reads = sum(reads)) %>% #summarise total prey reads by sample 
+  left_join(metadata, by = "sample") #attach metadata on sterilization treatment
+
+write.csv(lab_nondiet, here("data", "outputs", "rarefied_taxonomic_sort", "lab_nondiet_rare.csv"))
+
+##########################
+# Field: Non-diet ####
+##########################
+fld_nondiet <- field_rare %>%
+  rename("ASV" = "X") %>%
+  left_join(taxonomies, by = "ASV") %>% #combine with taxonomy DF
+  filter(taxonomy == "non-diet") %>% #select non-diet only
+  dplyr::select(-ID_bold, -ID_ncbi) %>% #remove taxonomy columns
+  group_by(ASV) %>% 
+  gather(sample, reads, HEV65:HEV100, factor_key = TRUE) %>% #make long while grouped by ASV
+  group_by(sample) %>%
+  summarise(reads = sum(reads)) %>% #summarise total prey reads by sample 
+  left_join(metadata, by = "sample") #attach metadata on sterilization treatment
+
+write.csv(fld_nondiet, here("data", "outputs", "rarefied_taxonomic_sort", "field_nondiet_rare.csv"))

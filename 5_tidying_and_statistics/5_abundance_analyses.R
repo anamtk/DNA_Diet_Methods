@@ -55,9 +55,17 @@ lab_pred <- lab_pred %>%
   group_by(sample, Sterilized) %>%
   summarise(pred = sum(reads))
 
+lab_nondiet <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+                             "lab_nondiet_rare.csv"))
+
+lab_nondiet <- lab_nondiet %>%
+  group_by(sample, Sterilized) %>%
+  summarise(nondiet = sum(reads))
+
 lab_all <- lab_prey %>%
   left_join(lab_all_prey, by = c("sample", "Sterilized")) %>%
   left_join(lab_pred, by = c("sample", "Sterilized")) %>%
+  left_join(lab_nondiet, by = c("sample", "Sterilized")) %>%
   mutate(total = 55205) 
 
 fld_prey <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
@@ -74,8 +82,16 @@ fld_pred <- fld_pred %>%
   group_by(sample, Sterilized) %>%
   summarise(pred = sum(reads))
 
+fld_nondiet <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+                             "field_nondiet_rare.csv"))
+
+fld_nondiet <- fld_nondiet %>%
+  group_by(sample, Sterilized) %>%
+  summarise(nondiet = sum(reads))
+
 fld_all <- fld_prey %>%
   left_join(fld_pred, by = c("sample", "Sterilized")) %>%
+  left_join(fld_nondiet, by = c("sample", "Sterilized")) %>%
   mutate(total = 16004)
 
 ###########################
@@ -210,7 +226,7 @@ min(lab_all_nz$prey)/55205
 
 max(fld_all_nz$prey)/16004
 min(fld_all_nz$prey)/16004
-00.006248438
+
 fld_all_nz %>%
   summarise(prop = prey/total) %>%
   summarise(mean = mean(prop), total= n(), sd = sd(prop), se = sd/sqrt(total))
@@ -330,6 +346,80 @@ zi <- testZeroInflation(simulationOutput)
 od <- testDispersion(simulationOutput)
 
 ###########################
+# Supplement: Lab nondiet models ####
+############################
+lab_nd_mod <- glmmTMB(nondiet ~ Sterilized,
+                       data = lab_all,
+                       offset = log(total),
+                       REML = FALSE,
+                       family = "genpois")
+
+lab_nd_null <- glmmTMB(nondiet ~ 1,
+                        data = lab_all,
+                        offset = log(total),
+                        REML = FALSE,
+                        family = "genpois")
+
+AICc(lab_nd_mod, lab_nd_null)
+
+lab_nd_mod <- glmmTMB(nondiet ~ Sterilized,
+                      data = lab_all,
+                      offset = log(total),
+                      family = "genpois")
+
+lab_nd_null <- glmmTMB(nondiet ~ 1,
+                       data = lab_all,
+                       offset = log(total),
+                       family = "genpois")
+
+summary(lab_nd_mod)
+
+plot(allEffects(lab_nd_mod))
+
+plot(residuals(lab_nd_null))
+simulationOutput <- simulateResiduals(fittedModel = lab_nd_null) 
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput)
+
+###########################
+# Supplement: Field nondiet models ####
+############################
+fld_nd_mod <- glmmTMB(nondiet ~ Sterilized,
+                      data = fld_all,
+                      offset = log(total),
+                      REML = FALSE,
+                      family = "genpois")
+
+fld_nd_null <- glmmTMB(nondiet ~ 1,
+                       data = fld_all,
+                       offset = log(total),
+                       REML = FALSE,
+                       family = "genpois")
+
+AICc(fld_nd_mod, fld_nd_null)
+
+fld_nd_mod <- glmmTMB(nondiet ~ Sterilized,
+                      data = fld_all,
+                      offset = log(total),
+                      family = "genpois")
+
+fld_nd_null <- glmmTMB(nondiet ~ 1,
+                       data = fld_all,
+                       offset = log(total),
+                       family = "genpois")
+
+summary(fld_nd_mod)
+
+plot(allEffects(fld_nd_mod))
+
+plot(residuals(fld_nd_null))
+simulationOutput <- simulateResiduals(fittedModel = fld_nd_null) 
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput)
+
+###########################
 # Supplement: Predator and other prey graphs ####
 ############################
 (lab_pred_graph <- ggplot(lab_all, aes(x = Sterilized, y = pred)) +
@@ -361,5 +451,18 @@ od <- testDispersion(simulationOutput)
     theme_bw() + theme(legend.position = "none") +
     scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")))
 
+(lab_nd_graph <- ggplot(lab_all, aes(x = Sterilized, y = nondiet)) +
+  geom_boxplot(fill = "#7B8D65") + scale_y_log10() +
+    theme_bw() + 
+    labs(x = "Surface sterilization treatment", y = "Nondiet DNA reads") +
+    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) + 
+    theme(legend.position = "none"))
+
+(fld_nd_graph <- ggplot(fld_all, aes(x = Sterilized, y = nondiet)) +
+  geom_boxplot(fill = "#F29979") +scale_y_log10() +
+    labs(x = "Surface sterilization treatment", y = "Nondiet DNA reads") +
+    theme_bw() + theme(legend.position = "none") +
+    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")))
+    
 plot_grid(lab_pred_graph, fld_pred_graph, lab_prey_graph, fld_prey_graph, 
-          ncol = 2, align = "vh")
+          lab_nd_graph, fld_nd_graph, ncol = 2, align = "vh")
