@@ -86,21 +86,21 @@ comp <- field %>%
   group_by(sample) %>%
   filter(sum(reads) >0) %>% #remove samples with zero prey
   ungroup() %>%
-  mutate(unique_ID = as.factor(unique_ID), presence = ifelse(reads > 0, 1, 0))
-#make unique_ID a factor and create a presence column
+  mutate(Family_ncbi = as.factor(Family_ncbi), presence = ifelse(reads > 0, 1, 0))
+#make Family_ncbi a factor and create a presence column
 
 #This GLMM is run by saying, how does the fixed effect of sterilization impact
 #presence, with a random effects structure with both a random interept term
-#for unique_ID (let each species have a different intercept) and a random slopes 
-#term for surface sterilization treatment (let each species' relationship with
-#with surface sterilization differ, ie let some species increase with surface 
+#for Family_ncbi (let each family have a different intercept) and a random slopes 
+#term for surface sterilization treatment (let each family's relationship with
+#with surface sterilization differ, ie let some families increase with surface 
 #sterilization, and others decrease)
 
-comp_mod <- glmmTMB(presence ~ Sterilized + (1+Sterilized|unique_ID), 
+comp_mod <- glmmTMB(presence ~ Sterilized + (1+Sterilized|Family_ncbi), 
                        data = comp,
                        family = "binomial")
 
-comp_null <- glmmTMB(presence ~ 1 + (1|unique_ID), 
+comp_null <- glmmTMB(presence ~ 1 + (1|Family_ncbi), 
                            data = comp,
                            family = "binomial")
 
@@ -122,15 +122,15 @@ heat <- field
 
 #make order and ID values characters for ifelse sorting to order level below
 heat$Order_ncbi <- as.character(heat$Order_ncbi)
-heat$unique_ID <- as.character(heat$unique_ID)
+heat$Family_ncbi <- as.character(heat$Family_ncbi)
 
 #ifelse statements creating an overall "Order" column for visualization
-heat$Order <- ifelse(heat$Order_ncbi == "", heat$unique_ID,
-                    heat$Order_ncbi)
+heat$Order <- heat$Order_ncbi
+heat$Family <- heat$Family_ncbi
 
 #now we can summarise heat by order and sterilization treatment for
 #the heatmap graph
-heat <- heat %>%
+heat_order <- heat %>%
   group_by(Order, Sterilized) %>% #group by order and sterilization treatment
   summarise(reads = mean(reads)) %>% #then find the mean abundance for each order
   ungroup() %>% #ungroup so we can make order a factor
@@ -146,20 +146,20 @@ heat <- heat %>%
 #variable for these abundances for the color ramp in the graph, but also want
 #to discount the effects of zero reads in this, so we will create a DF of non-zero
 #values for reads, and then find quantiles of this to inform our quantiles for the figure
-heat_map_nz <- heat %>%
+heat_order_nz <- heat_order %>%
   filter(reads > 0)
-quantile(heat_map_nz$reads)
-#0.2222222   0.5031676   2.8961988   9.7087719 120.5555556 
+quantile(heat_order_nz$reads)
+#0.2777778  0.7400097   2.5789474   9.4725877 120.7222222 
 
 #now we can set a quantile variable in our DF
-heat$quantiles <- ifelse(heat$reads == 0, 0,
-                             ifelse(heat$reads > 0 & heat$reads <= 0.2222222, 1, 
-                                    ifelse(heat$reads > 0.2222222 & heat$reads <= 0.5031676, 2,
-                                           ifelse(heat$reads > 0.5031676 & heat$reads <= 2.8961988, 3,
-                                                  ifelse(heat$reads > 2.8961988 & heat$reads <= 9.7087719, 4, 5)))))
+heat_order$quantiles <- ifelse(heat_order$reads == 0, 0,
+                             ifelse(heat_order$reads > 0 & heat_order$reads <= 0.2777778, 1, 
+                                    ifelse(heat_order$reads > 0.2777778 & heat_order$reads <= 0.7400097, 2,
+                                           ifelse(heat_order$reads > 0.7400097 & heat_order$reads <= 2.5789474, 3,
+                                                  ifelse(heat_order$reads > 2.5789474 & heat_order$reads <= 9.4725877, 4, 5)))))
 
 #making it a factor for visualization
-heat$quantiles <- as.factor(heat$quantiles)  
+heat_order$quantiles <- as.factor(heat_order$quantiles)  
 
 #these are two color palettes that could be used in this figure
 pal <- c(
@@ -180,7 +180,7 @@ pal2 <- c(
   '5' = "#734646"
 )
 
-(heat_map <- ggplot(heat, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
+(heat_map_order <- ggplot(heat_order, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
   geom_tile() + 
   coord_equal() +
   labs(x = "Surface sterilization treatment", y = "Diet group") +
@@ -188,7 +188,7 @@ pal2 <- c(
   scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
                     values = pal2,
                     limits = names(pal2),
-                    labels = c("0", "< 0.2", "< 0.5", "< 2.9", "< 9.7", "< 120.6")) + 
+                    labels = c("0", "< 0.28", "< 0.74", "< 2.58", "< 9.47", "< 120.72")) + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
