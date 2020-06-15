@@ -41,8 +41,8 @@ comp_lab <- lab %>%
   filter(sum(reads) >0) %>%
   ungroup() %>%
   mutate(presence = ifelse(reads > 0, 1, 0)) %>% #make a presence-absence value
-  dplyr::select(presence, sample, unique_ID) %>% #select only the variables for matrix
-  pivot_wider(names_from = unique_ID, values_from = presence) %>% 
+  dplyr::select(presence, sample, Family_ncbi) %>% #select only the variables for matrix
+  pivot_wider(names_from = Family_ncbi, values_from = presence) %>% 
   #make column names based on unique ID, values from presence in cells
   column_to_rownames(var = "sample") 
 #set the column names to the sample, so that only numeric values are in the matrix
@@ -83,8 +83,8 @@ abund_lab <- lab %>%
   group_by(sample) %>%
   filter(sum(reads) >0) %>%
   ungroup() %>%
-  dplyr::select(reads, sample, unique_ID) %>% #select only the variables for matrix
-  pivot_wider(names_from = unique_ID, values_from = reads) %>% 
+  dplyr::select(reads, sample, Family_ncbi) %>% #select only the variables for matrix
+  pivot_wider(names_from = Family_ncbi, values_from = reads) %>% 
   #make column names based on unique ID, values from presence in cells
   column_to_rownames(var = "sample") 
 #set the column names to the sample, so that only numeric values are in the matrix
@@ -116,29 +116,24 @@ adonis(abund_lab ~ Sterilized, data = meta_lab, dist = "bray")
 
 ###########################
 # Heat map visualization of both presence and abundance ####
-#(At order level for clarity)
 ############################
 heat_lab <- lab
 
 #make order and ID values characters for ifelse sorting to order level below
-heat_lab$Order_ncbi <- as.character(heat_lab$Order_ncbi)
-heat_lab$unique_ID <- as.character(heat_lab$unique_ID)
+heat_lab$Family_ncbi <- as.character(heat_lab$Family_ncbi)
 
-#ifelse statements creating an overall "Order" column for visualization
-heat_lab$Order <- ifelse(heat_lab$Order_ncbi == "", heat_lab$unique_ID,
-                     heat_lab$Order_ncbi)
 
 #now we can summarise heat by order and sterilization treatment for
 #the heatmap graph
 heat_lab <- heat_lab %>%
-  group_by(Order, Sterilized) %>% #group by order and sterilization treatment
+  group_by(Family_ncbi, Sterilized) %>% #group by order and sterilization treatment
   summarise(reads = mean(reads)) %>% #then find the mean abundance for each order
   ungroup() %>% #ungroup so we can make order a factor
-  mutate(Order = as.factor(Order)) %>% #make order a factor
+  mutate(Order = as.factor(Family_ncbi)) %>% #make order a factor
   pivot_wider(names_from = Sterilized, values_from = reads) %>% #make wide for two columns
   #for sterilization treatment so we can arrange in descending order of abundance
   arrange((NS + SS), (NS)) %>% #arrange in descending order of abundance
-  mutate(Order = factor(Order, levels = Order)) %>% #reset the levels of order on this
+  mutate(Family_ncbi = factor(Family_ncbi, levels = Family_ncbi)) %>% #reset the levels of order on this
   #new abundance-based ordering of the Order factor
   gather(Sterilized, reads, NS:SS) #gather DF back up for visualization
 
@@ -149,14 +144,14 @@ heat_lab <- heat_lab %>%
 heat_lab_nz <- heat_lab %>%
   filter(reads > 0)
 quantile(heat_lab_nz$reads)
-#0.09090909   2.62784091   7.32575758  72.48579545 698.75000000  
+# 0.09090909   4.81818182  22.43750000  74.06818182 698.75000000  
 
 #now we can set a quantile variable in our DF
 heat_lab$quantiles <- ifelse(heat_lab$reads == 0, 0,
                          ifelse(heat_lab$reads > 0 & heat_lab$reads <= 0.09090909 , 1, 
-                                ifelse(heat_lab$reads > 0.09090909 & heat_lab$reads <= 2.62784091, 2,
-                                       ifelse(heat_lab$reads > 2.62784091 & heat_lab$reads <= 7.32575758, 3,
-                                              ifelse(heat_lab$reads > 7.32575758 & heat_lab$reads <= 72.48579545, 4, 5)))))
+                                ifelse(heat_lab$reads > 0.09090909 & heat_lab$reads <= 4.81818182, 2,
+                                       ifelse(heat_lab$reads > 4.81818182 & heat_lab$reads <= 22.43750000, 3,
+                                              ifelse(heat_lab$reads > 22.43750000 & heat_lab$reads <= 74.06818182, 4, 5)))))
 
 #making it a factor for visualization
 heat_lab$quantiles <- as.factor(heat_lab$quantiles)  
@@ -180,19 +175,19 @@ pal2 <- c(
   '5' = "#734646"
 )
 
-heat_lab_graph <- ggplot(heat_lab, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
+heat_lab_graph <- ggplot(heat_lab, aes(x = Sterilized, y = Family_ncbi, fill=quantiles, height = 0.95, width = 0.95)) +
   geom_tile() + 
   coord_equal() +
-  labs(x = "Surface sterilization treatment", y = "Diet group") +
+  labs(x = "Surface sterilization treatment", y = "Diet family") +
   scale_x_discrete(labels=c("NS" = "Not Sterilized", "SS" = "Surface Sterilized")) +
   scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
                     values = pal2,
                     limits = names(pal2),
-                    labels = c("0", "< 0.1", "< 2.6", "< 7.3", "< 72.5", "< 698.8")) + 
+                    labels = c("0", "< 0.1", "< 4.8", "< 22.4", "< 74.1", "> 74.1")) + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-#0.09090909   2.62784091   7.32575758  72.48579545 698.75000000  
+## 0.09090909   4.81818182  22.43750000  74.06818182 698.75000000   
 
 ###########################
 # Effect Sizes Presence graph ####
@@ -200,11 +195,11 @@ heat_lab_graph <- ggplot(heat_lab, aes(x = Sterilized, y = Order, fill=quantiles
 
 #Effect sizes are built off of means and either SD or SE
 effect <- lab %>%
-  group_by(unique_ID, Sterilized) %>%
+  group_by(Family_ncbi, Sterilized) %>%
   mutate(presence = ifelse(reads > 0, 1, 0)) %>%
   summarize(mean = mean(presence), sd = sd(presence)) %>%
   ungroup() %>%
-  group_by(unique_ID) %>%
+  group_by(Family_ncbi) %>%
   pivot_wider(names_from = c(Sterilized),
               values_from = c(mean, sd)) %>% #this pivots so there is an average for
   #SS and NS groups
@@ -214,7 +209,7 @@ effect <- lab %>%
 #graph visualization
 pres_sort <- lab %>% 
   mutate(presence = ifelse(reads > 0, 1, 0)) %>%
-  group_by(unique_ID) %>%
+  group_by(Family_ncbi) %>%
   summarise(overall = mean(presence, na.rm=TRUE)) #gets the overall presence of that diet item
 
 #this computes the effect sies based on means, standared errors, and sample sizes
@@ -222,7 +217,7 @@ es_ID <- esc_mean_se(grp1m = effect$mean_NS, grp1se = effect$se_NS, grp1n = 19,
                      grp2m = effect$mean_SS, grp2se = effect$se_SS, grp2n = 18, es.type = "g")
 
 #extract data of interest from teh es_ID object
-IDs <- as.character(effect$unique_ID)
+IDs <- as.character(effect$Family_ncbi)
 Hedges_g <- es_ID$es
 Lower_CI <- es_ID$ci.lo
 Upper_CI <- es_ID$ci.hi
@@ -239,7 +234,7 @@ effects$IDs <- as.factor(effects$IDs)
 #join this with the overall presence DF so we can order by overall
 #presence for graph visualization
 effects1 <- effects %>%
-  left_join(pres_sort, by = c("IDs" = "unique_ID")) %>%
+  left_join(pres_sort, by = c("IDs" = "Family_ncbi")) %>%
   arrange(overall) %>%
   mutate(IDs=factor(IDs, levels=IDs)) 
 
@@ -261,10 +256,10 @@ pres_effect_l <- ggplot(effects1, aes(x = IDs, y = Hedges_g)) +
 
 #Effect sizes are built off of means and either SD or SE
 effect_abund <- lab %>%
-  group_by(unique_ID, Sterilized) %>%
+  group_by(Family_ncbi, Sterilized) %>%
   summarize(mean = mean(reads), sd = sd(reads)) %>%
   ungroup() %>%
-  group_by(unique_ID) %>%
+  group_by(Family_ncbi) %>%
   pivot_wider(names_from = c(Sterilized),
               values_from = c(mean, sd)) %>% #this pivots so there is an average for
   #SS and NS groups
@@ -273,7 +268,7 @@ effect_abund <- lab %>%
 #this is the overall presence of each species, which we will use to sort the 
 #graph visualization
 abund_sort <- lab %>% 
-  group_by(unique_ID) %>%
+  group_by(Family_ncbi) %>%
   summarise(overall = mean(reads, na.rm=TRUE)) #gets the overall average reads of that diet item
 
 #this computes the effect sies based on means, standared errors, and sample sizes
@@ -281,7 +276,7 @@ es_ID_abund <- esc_mean_se(grp1m = effect_abund$mean_NS, grp1se = effect_abund$s
                            grp2m = effect_abund$mean_SS, grp2se = effect_abund$se_SS, grp2n = 18, es.type = "g")
 
 #extract data of interest from teh es_ID object
-IDs <- as.character(effect_abund$unique_ID)
+IDs <- as.character(effect_abund$Family_ncbi)
 Hedges_g <- es_ID_abund$es
 Lower_CI <- es_ID_abund$ci.lo
 Upper_CI <- es_ID_abund$ci.hi
@@ -298,7 +293,7 @@ effects_abund$IDs <- as.factor(effects_abund$IDs)
 #join this with the overall presence DF so we can order by overall
 #presence for graph visualization
 effects_abund1 <- effects_abund %>%
-  left_join(abund_sort, by = c("IDs" = "unique_ID")) %>%
+  left_join(abund_sort, by = c("IDs" = "Family_ncbi")) %>%
   arrange(overall) %>%
   mutate(IDs=factor(IDs, levels=IDs)) 
 
