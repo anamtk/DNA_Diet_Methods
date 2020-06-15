@@ -102,6 +102,15 @@ fld_all <- fld_prey %>%
 #items detected, as what we are asking here is whether some aspect
 #of the surface sterilization treatment altered DNA abundance 
 #proportions/composition when prey is detected
+lab_all %>%
+  filter(known == 0) %>%
+  ungroup() %>%
+  tally()
+
+lab_all %>%
+  filter(known != 0) %>%
+  ungroup() %>%
+  tally()
 
 lab_all_nz <- lab_all %>%
   filter(known > 0)
@@ -143,6 +152,15 @@ od <- testDispersion(simulationOutput)
 ###########################
 # Field model ####
 ############################
+fld_all %>%
+  filter(prey == 0) %>%
+  ungroup() %>%
+  tally()
+
+fld_all %>%
+  filter(prey > 0) %>%
+  ungroup() %>%
+  tally()
 
 fld_all_nz <- fld_all %>%
   filter(prey > 0)

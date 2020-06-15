@@ -76,6 +76,20 @@ zi <- testZeroInflation(simulationOutput)
 od <- testDispersion(simulationOutput) 
 
 ###########################
+# Plot for paper of richness ####
+############################
+(rich_graph <- ggplot(richness, aes(x = Sterilized, y = SR)) +
+   geom_boxplot(fill = "#F29979") + theme_bw() +
+   labs(x = "Surface sterilization treatment", y = "Prey family richness") +
+   scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) +
+   theme(legend.position = "none"))
+
+richness %>%
+  ungroup() %>%
+  summarise(mean= mean(SR), total = n(), sd = sd(SR), se = sd/sqrt(total))
+max(richness$SR)
+min(richness$SR)
+###########################
 # Field presence-absence composition analysis (PERMANOVA) ####
 ############################
 
@@ -263,6 +277,68 @@ pal2 <- c(
                       values = pal2,
                       limits = names(pal2),
                       labels = c("0", "< 0.05", "< 0.37", "< 1.33", "< 6.78", "> 6.78")) + 
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)))
+
+##0.05263158   0.37353801   1.32602339   6.77631579 220.05263158 
+
+###########################
+# Per-sample heat map as an alternative to effects map? ####
+############################
+
+heat_nz <- heat %>%
+  filter(reads > 0)
+quantile(heat_nz$reads)
+#1    1    6   25 4079  
+
+#now we can set a quantile variable in our DF
+field %>%
+  dplyr::select(sample, Sterilized) %>%
+  unique()
+
+heat$sample <- factor(heat$sample, levels = c("HEV100", "HEV106", "HEV107", "HEV108",
+                                              "HEV109", "HEV110", "HEV111", "HEV79",
+                                              "HEV81", "HEV82", "HEV83", "HEV87",
+                                              "HEV88", "HEV89", "HEV95", "HEV96", 
+                                              "HEV97", "HEV98", "HEV99", "HEV101",
+                                              "HEV102", "HEV103", "HEV104", "HEV105",
+                                              "HEV65", "HEV67", "HEV68", "HEV70",
+                                              "HEV71", "HEV74", "HEV76", "HEV90", 
+                                              "HEV91", "HEV92", "HEV93", "HEV94"))
+heat$quantiles <- ifelse(heat$reads == 0, 0,
+                                ifelse(heat$reads > 0 & heat$reads <= 1, 1, 
+                                              ifelse(heat$reads > 1 & heat$reads <= 6, 3,
+                                                     ifelse(heat$reads > 6 & heat$reads <= 25, 4, 5))))
+
+#making it a factor for visualization
+heat$quantiles <- as.factor(heat$quantiles)  
+
+#these are two color palettes that could be used in this figure
+pal3 <- c(
+  '1' = "#F27D72", 
+  '3' = "#D26F67", 
+  '4' = "#B2615C",
+  '5' = "#925451"
+)
+
+pal2 <- c(
+  '0' = "#FFFFFF",
+  '1' = "#F29979", 
+  '3' = "#D2846C", 
+  '4' = "#B26F5F",
+  '5' = "#925B53"
+)
+
+heat1 <- heat %>%
+  filter(reads > 0)
+(heat_map <- ggplot(heat1, aes(x = sample, y = Family, fill=quantiles, height = 0.95, width = 0.95)) +
+    geom_tile() + 
+    coord_equal() +
+    labs(x = "Sample", y = "Diet family") +
+    scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
+                      values = pal3,
+                      limits = names(pal3),
+                      labels = c("< 1", "< 6", "< 25", "> 25")) + 
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
