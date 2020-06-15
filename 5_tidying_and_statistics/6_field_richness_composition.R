@@ -116,17 +116,15 @@ fit <- plot(simulationOutput, asFactor=TRUE)
 
 ###########################
 # Heat map visualization of both presence and abundance ####
-#(At order level for clarity)
+#(At order level)
 ############################
 heat <- field
 
 #make order and ID values characters for ifelse sorting to order level below
 heat$Order_ncbi <- as.character(heat$Order_ncbi)
-heat$Family_ncbi <- as.character(heat$Family_ncbi)
 
 #ifelse statements creating an overall "Order" column for visualization
 heat$Order <- heat$Order_ncbi
-heat$Family <- heat$Family_ncbi
 
 #now we can summarise heat by order and sterilization treatment for
 #the heatmap graph
@@ -183,7 +181,7 @@ pal2 <- c(
 (heat_map_order <- ggplot(heat_order, aes(x = Sterilized, y = Order, fill=quantiles, height = 0.95, width = 0.95)) +
   geom_tile() + 
   coord_equal() +
-  labs(x = "Surface sterilization treatment", y = "Diet group") +
+  labs(x = "Surface sterilization treatment", y = "Diet order") +
   scale_x_discrete(labels=c("NS" = "Not Sterilized", "SS" = "Surface Sterilized")) +
   scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
                     values = pal2,
@@ -193,6 +191,83 @@ pal2 <- c(
   theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
 #0.2222222   0.5031676   2.8961988   9.7087719 120.5555556 
+
+###########################
+# Heat map visualization of both presence and abundance ####
+#(At family level)
+############################
+#make order and ID values characters for ifelse sorting to order level below
+heat$Family_ncbi <- as.character(heat$Family_ncbi)
+
+#ifelse statements creating an overall "Order" column for visualization
+heat$Family <- heat$Family_ncbi
+
+#now we can summarise heat by order and sterilization treatment for
+#the heatmap graph
+heat_family <- heat %>%
+  group_by(Family, Sterilized) %>% #group by order and sterilization treatment
+  summarise(reads = mean(reads)) %>% #then find the mean abundance for each order
+  ungroup() %>% #ungroup so we can make order a factor
+  mutate(Family = as.factor(Family)) %>% #make order a factor
+  pivot_wider(names_from = Sterilized, values_from = reads) %>% #make wide for two columns
+  #for sterilization treatment so we can arrange in descending order of abundance
+  arrange((NS + SS), (NS)) %>% #arrange in descending order of abundance
+  mutate(Family = factor(Family, levels = Family)) %>% #reset the levels of order on this
+  #new abundance-based ordering of the Order factor
+  gather(Sterilized, reads, NS:SS) #gather DF back up for visualization
+
+#Because read abundance has such a broad range, we want to set a quantile-based
+#variable for these abundances for the color ramp in the graph, but also want
+#to discount the effects of zero reads in this, so we will create a DF of non-zero
+#values for reads, and then find quantiles of this to inform our quantiles for the figure
+heat_family_nz <- heat_family %>%
+  filter(reads > 0)
+quantile(heat_family_nz$reads)
+#0.05263158   0.37353801   1.32602339   6.77631579 220.05263158 
+
+#now we can set a quantile variable in our DF
+heat_family$quantiles <- ifelse(heat_family$reads == 0, 0,
+                               ifelse(heat_family$reads > 0 & heat_family$reads <= 0.05263158, 1, 
+                                      ifelse(heat_family$reads > 0.05263158 & heat_family$reads <= 0.37353801, 2,
+                                             ifelse(heat_family$reads > 0.37353801 & heat_family$reads <= 1.32602339, 3,
+                                                    ifelse(heat_family$reads > 1.32602339 & heat_family$reads <= 6.77631579, 4, 5)))))
+
+#making it a factor for visualization
+heat_family$quantiles <- as.factor(heat_family$quantiles)  
+
+#these are two color palettes that could be used in this figure
+pal <- c(
+  '0' = "#FFFFFF",
+  '1' = "#F27D72", 
+  '2' = "#D26F67", 
+  '3' = "#B2615C",
+  '4' = "#925451",
+  '5' = "#734646"
+)
+
+pal2 <- c(
+  '0' = "#FFFFFF",
+  '1' = "#F29979", 
+  '2' = "#D2846C", 
+  '3' = "#B26F5F",
+  '4' = "#925B53",
+  '5' = "#734646"
+)
+
+(heat_map_family <- ggplot(heat_family, aes(x = Sterilized, y = Family, fill=quantiles, height = 0.95, width = 0.95)) +
+    geom_tile() + 
+    coord_equal() +
+    labs(x = "Surface sterilization treatment", y = "Diet family") +
+    scale_x_discrete(labels=c("NS" = "Not Sterilized", "SS" = "Surface Sterilized")) +
+    scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
+                      values = pal2,
+                      limits = names(pal2),
+                      labels = c("0", "< 0.05", "< 0.37", "< 1.33", "< 6.78", "< 220.05")) + 
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)))
+
+##0.05263158   0.37353801   1.32602339   6.77631579 220.05263158 
+
 
 ###########################
 # Diet species names for stats ####
