@@ -59,10 +59,10 @@ ncbi$taxonomy <- ncbi$Category
 #we will assign below after merging with full ASV table)
 #subset only the variables of interest from these two dataframes before merging
 bold_id <- bold %>%
-  dplyr::select(ASV, ID, Order, taxonomy)
+  dplyr::select(ASV, ID, Order, Family, Genus, taxonomy)
 
 ncbi_id <- ncbi %>%
-  dplyr::select(ASV, ID, Order, taxonomy)
+  dplyr::select(ASV, ID, Order, Family, Genus, taxonomy)
 
 #join them together by ASV and taxonomy
 id_all <- bold_id %>%  
@@ -71,8 +71,12 @@ id_all <- bold_id %>%
 id_all <- id_all %>%
   rename(ID_bold = ID.x,
          Order_bold = Order.x,
+         Family_bold = Family.x,
+         Genus_bold = Genus.x,
          ID_ncbi = ID.y,
-         Order_ncbi = Order.y)
+         Order_ncbi = Order.y,
+         Family_ncbi = Family.y,
+         Genus_ncbi = Genus.y)
 
 ###########################
 # Bind community data and taxonomies
@@ -92,6 +96,7 @@ id_tab$taxonomy <- replace_na(id_tab$taxonomy, "no hit")
 
 #write taxonomies to a file for import into future analyses
 taxonomies <- id_tab %>%
-  dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, taxonomy)
+  dplyr::select(ASV, ID_bold, Order_bold, Family_bold, Genus_bold, 
+                ID_ncbi, Order_ncbi, Family_ncbi, Genus_ncbi, taxonomy)
 
 write.csv(taxonomies, here("data", "outputs", "taxonomic_assignments", "taxonomic_assignments.csv"))
