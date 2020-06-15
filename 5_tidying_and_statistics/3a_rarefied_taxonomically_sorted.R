@@ -62,7 +62,31 @@ write.csv(lab_known_prey, here("data", "outputs", "rarefied_taxonomic_sort", "la
 lab_prey <- lab_rare %>% 
   rename("ASV" = "X") %>%
   left_join(taxonomies, by = "ASV") %>% #join by taxonomy
-  filter(taxonomy == "prey") #filter out just the prey taxonomies
+  filter(taxonomy == "prey") %>%#filter out just the prey taxonomies
+  gather(sample, reads, HEV07:HEV29) %>% #make long
+  group_by(sample, Family_ncbi, Order_ncbi) %>% #group by sample and family
+  summarise(reads = sum(reads)) %>% #summarise at family level
+  left_join(metadata, by = "sample") #join to consumer metadata
+  
+#Some of these have zero counts across all samples, so I'd like to delete
+#them for later. 
+
+lab_zeros <- lab_prey %>%
+  ungroup() %>%
+  group_by(Family_ncbi) %>% #group by family
+  summarise(reads = sum(reads)) %>% #sum across all samples
+  filter(reads == 0) %>% #find the ones that are equal to zero
+  dplyr::select(Family_ncbi) #create a dataframe of just their names
+
+lab_prey <- lab_prey %>%
+  anti_join(lab_zeros, by = "Family_ncbi") #anti join to remove the IDs that are zero across all smaples
+
+#export for analysis later
+write.csv(lab_prey, here("data", "outputs", "rarefied_taxonomic_sort", "lab_all_prey_rare.csv"))
+
+
+
+
 
 #make the ID columns characters for the ifelse statements below
 lab_prey$ID_bold <- as.character(lab_prey$ID_bold)
@@ -90,7 +114,7 @@ lab_unique_ID <- lab_unique_ID %>%
 lab_prey <- lab_prey %>%
   left_join(lab_unique_ID, by = "ASV")  %>%
   gather(sample, reads, HEV07:HEV29) %>%
-  group_by(sample, unique_ID, Order_ncbi) %>%
+  group_by(sample, unique_ID, Order_ncbi, Family_ncbi) %>%
   summarise(reads = sum(reads)) %>%
   left_join(metadata, by = "sample")
 
