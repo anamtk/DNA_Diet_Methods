@@ -84,55 +84,6 @@ lab_prey <- lab_prey %>%
 #export for analysis later
 write.csv(lab_prey, here("data", "outputs", "rarefied_taxonomic_sort", "lab_all_prey_rare.csv"))
 
-
-
-
-
-#make the ID columns characters for the ifelse statements below
-lab_prey$ID_bold <- as.character(lab_prey$ID_bold)
-lab_prey$ID_ncbi <- as.character(lab_prey$ID_ncbi)
-
-#ifelse statement that assigns each ASV to a specific taxonomy
-#I want the BOLD ids to be the last option because these are to
-#species in many cases where NCBI/Genbank blasted to order, family, or genus
-#therefore, I'm going to say that if there is no BOLD id, give it the NCBI
-#ID, otherwise, give it the BOLD ID.
-lab_unique_ID <- ifelse(is.na(lab_prey$ID_bold), lab_prey$ID_ncbi, 
-                    lab_prey$ID_bold)
-
-#look at what these are:
-lab_unique_ID
-
-#make this a dataframe so we can attach it back to the community
-#matrix for analyses at the sample level and later Jaccard dissimiliarity
-lab_unique_ID <- as.data.frame(lab_unique_ID)
-lab_unique_ID$ASV <- lab_prey$ASV #give it an ASV column for attaching later
-
-lab_unique_ID <- lab_unique_ID %>%
-  rename("unique_ID" = "lab_unique_ID")
-
-lab_prey <- lab_prey %>%
-  left_join(lab_unique_ID, by = "ASV")  %>%
-  gather(sample, reads, HEV07:HEV29) %>%
-  group_by(sample, unique_ID, Order_ncbi, Family_ncbi) %>%
-  summarise(reads = sum(reads)) %>%
-  left_join(metadata, by = "sample")
-
-#Some of these have zero counts across all samples, so I'd like to delete
-#them for later. 
-
-lab_zeros <- lab_prey %>%
-  ungroup() %>%
-  group_by(unique_ID) %>% #group by unique_ID
-  summarise(reads = sum(reads)) %>% #sum across all samples
-  filter(reads == 0) %>% #find the ones that are equal to zero
-  dplyr::select(unique_ID) #create a dataframe of just their names
-
-lab_prey <- lab_prey %>%
-  anti_join(lab_zeros, by = "unique_ID") #anti join to remove the IDs that are zero across all smaples
-
-write.csv(lab_prey, here("data", "outputs", "rarefied_taxonomic_sort", "lab_all_prey_rare.csv"))
-
 ##########################
 # Mesocosms: Predator ####
 ##########################
