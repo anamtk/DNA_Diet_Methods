@@ -105,51 +105,26 @@ write.csv(lab_predator, here("data", "outputs", "rarefied_taxonomic_sort", "lab_
 field_prey <- field_rare %>% 
   rename("ASV" = "X") %>%
   left_join(taxonomies, by = "ASV") %>% #join by taxonomy
-  filter(taxonomy == "prey") #filter out just the prey taxonomies
+  filter(taxonomy == "prey") %>%#filter out just the prey taxonomies
+  gather(sample, reads, HEV65:HEV100) %>% #make long
+  group_by(sample, Family_ncbi, Order_ncbi) %>% #group by sample and family
+  summarise(reads = sum(reads)) %>% #summarise at family level
+  left_join(metadata, by = "sample") #join to consumer metadata
 
-#These prey ASVs contain duplicates of the same species, which we want to
-#concatenate before analyses
-
-#make the ID columns characters for the ifelse statements below
-field_prey$ID_bold <- as.character(field_prey$ID_bold)
-field_prey$ID_ncbi <- as.character(field_prey$ID_ncbi)
-
-#ifelse statement that assigns each ASV to a specific taxonomy
-#I want the BOLD ids to be the last option because these are to
-#species in many cases where NCBI/Genbank blasted to order, family, or genus
-#therefore, I'm going to say that if there is no BOLD id, give it the NCBI
-#ID, otherwise, give it the BOLD ID.
-unique_ID <- ifelse(is.na(field_prey$ID_bold), field_prey$ID_ncbi, 
-                 field_prey$ID_bold)
-
-#look at what these are:
-unique_ID
-
-#make this a dataframe so we can attach it back to the community
-#matrix for analyses at the sample level and later Jaccard dissimiliarity
-unique_ID <- as.data.frame(unique_ID)
-unique_ID$ASV <- field_prey$ASV #give it an ASV column for attaching later
-
-field_prey <- field_prey %>%
-  left_join(unique_ID, by = "ASV")  %>%
-  gather(sample, reads, HEV65:HEV100) %>%
-  group_by(sample, unique_ID, Order_ncbi) %>%
-  summarise(reads = sum(reads)) %>%
-  left_join(metadata, by = "sample")
-  
 #Some of these have zero counts across all samples, so I'd like to delete
 #them for later. 
 
-fld_zeros <- field_prey %>%
+field_zeros <- field_prey %>%
   ungroup() %>%
-  group_by(unique_ID) %>% #group by unique_ID
+  group_by(Family_ncbi) %>% #group by family
   summarise(reads = sum(reads)) %>% #sum across all samples
   filter(reads == 0) %>% #find the ones that are equal to zero
-  dplyr::select(unique_ID) #create a dataframe of just their names
+  dplyr::select(Family_ncbi) #create a dataframe of just their names
 
 field_prey <- field_prey %>%
-  anti_join(fld_zeros, by = "unique_ID") #anti join to remove the IDs that are zero across all smaples
+  anti_join(field_zeros, by = "Family_ncbi") #anti join to remove the IDs that are zero across all smaples
 
+#export for analysis later
 write.csv(field_prey, here("data", "outputs", "rarefied_taxonomic_sort", "field_prey_rare.csv"))
 
 ##########################
