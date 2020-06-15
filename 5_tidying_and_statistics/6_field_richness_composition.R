@@ -272,7 +272,7 @@ pal2 <- c(
 ###########################
 # Diet species names for stats ####
 ############################
-levels(comp$unique_ID)
+levels(comp$Family_ncbi)
 unique(comp$Order_ncbi)
 ###########################
 # (SUPPLEMENT: Field Abundance-based composition analysis (PERMANOVA))####
@@ -291,12 +291,12 @@ unique(comp$Order_ncbi)
 #again, we set REML=FALSE for AIC comparison FIRST, and then refit with REML
 #for model summaries and diagnostics
 
-bray_mod <- glmmTMB(reads ~ Sterilized + (1+Sterilized|unique_ID), 
+bray_mod <- glmmTMB(reads ~ Sterilized + (1+Sterilized|Family_ncbi), 
                     data = comp,
                     family = "genpois",
                     REML = FALSE)
 
-bray_null <- glmmTMB(reads ~ 1 + (1|unique_ID), 
+bray_null <- glmmTMB(reads ~ 1 + (1|Family_ncbi), 
                      data = comp,
                      family = "genpois",
                      REML = FALSE)
@@ -304,11 +304,11 @@ bray_null <- glmmTMB(reads ~ 1 + (1|unique_ID),
 AICc(bray_mod, bray_null)
 
 #refit with REML
-bray_mod <- glmmTMB(reads ~ Sterilized + (1+Sterilized|unique_ID), 
+bray_mod <- glmmTMB(reads ~ Sterilized + (1+Sterilized|Family_ncbi), 
                     data = comp,
                     family = "genpois")
 
-bray_null <- glmmTMB(reads ~ 1 + (1|unique_ID), 
+bray_null <- glmmTMB(reads ~ 1 + (1|Family_ncbi), 
                      data = comp,
                      family = "genpois")
 
@@ -332,10 +332,10 @@ od <- testDispersion(simulationOutput)
 
 #Effect sizes are built off of means and either SD or SE
 effect <- comp %>%
-  group_by(unique_ID, Sterilized) %>%
+  group_by(Family_ncbi, Sterilized) %>%
   summarize(mean = mean(presence), sd = sd(presence)) %>%
   ungroup() %>%
-  group_by(unique_ID) %>%
+  group_by(Family_ncbi) %>%
   pivot_wider(names_from = c(Sterilized),
               values_from = c(mean, sd)) %>% #this pivots so there is an average for
   #SS and NS groups
@@ -344,7 +344,7 @@ effect <- comp %>%
 #this is the overall presence of each species, which we will use to sort the 
 #graph visualization
 pres_sort <- comp %>% 
-  group_by(unique_ID) %>%
+  group_by(Family_ncbi) %>%
   summarise(overall = mean(presence)) #gets the overall presence of that diet item
 
 #this computes the effect sies based on means, standared errors, and sample sizes
@@ -352,7 +352,7 @@ es_ID <- esc_mean_se(grp1m = effect$mean_NS, grp1se = effect$se_NS, grp1n = 19,
                         grp2m = effect$mean_SS, grp2se = effect$se_SS, grp2n = 18, es.type = "g")
 
 #extract data of interest from teh es_ID object
-IDs <- as.character(effect$unique_ID)
+IDs <- as.character(effect$Family_ncbi)
 Hedges_g <- es_ID$es
 Lower_CI <- es_ID$ci.lo
 Upper_CI <- es_ID$ci.hi
@@ -369,7 +369,7 @@ effects$IDs <- as.factor(effects$IDs)
 #join this with the overall presence DF so we can order by overall
 #presence for graph visualization
 effects1 <- effects %>%
-  left_join(pres_sort, by = c("IDs" = "unique_ID")) %>%
+  left_join(pres_sort, by = c("IDs" = "Family_ncbi")) %>%
   arrange(overall) %>%
   mutate(IDs=factor(IDs, levels=IDs)) 
 
@@ -391,10 +391,10 @@ pres_effect_f <- ggplot(effects1, aes(x = IDs, y = Hedges_g)) +
 
 #Effect sizes are built off of means and either SD or SE
 effect_abund <- comp %>%
-  group_by(unique_ID, Sterilized) %>%
+  group_by(Family_ncbi, Sterilized) %>%
   summarize(mean = mean(reads), sd = sd(reads)) %>%
   ungroup() %>%
-  group_by(unique_ID) %>%
+  group_by(Family_ncbi) %>%
   pivot_wider(names_from = c(Sterilized),
               values_from = c(mean, sd)) %>% #this pivots so there is an average for
   #SS and NS groups
@@ -403,7 +403,7 @@ effect_abund <- comp %>%
 #this is the overall presence of each species, which we will use to sort the 
 #graph visualization
 abund_sort <- comp %>% 
-  group_by(unique_ID) %>%
+  group_by(Family_ncbi) %>%
   summarise(overall = mean(reads)) #gets the overall average reads of that diet item
 
 #this computes the effect sies based on means, standared errors, and sample sizes
@@ -411,7 +411,7 @@ es_ID_abund <- esc_mean_se(grp1m = effect_abund$mean_NS, grp1se = effect_abund$s
                      grp2m = effect_abund$mean_SS, grp2se = effect_abund$se_SS, grp2n = 18, es.type = "g")
 
 #extract data of interest from teh es_ID object
-IDs <- as.character(effect_abund$unique_ID)
+IDs <- as.character(effect_abund$Family_ncbi)
 Hedges_g <- es_ID_abund$es
 Lower_CI <- es_ID_abund$ci.lo
 Upper_CI <- es_ID_abund$ci.hi
@@ -428,7 +428,7 @@ effects_abund$IDs <- as.factor(effects_abund$IDs)
 #join this with the overall presence DF so we can order by overall
 #presence for graph visualization
 effects_abund1 <- effects_abund %>%
-  left_join(abund_sort, by = c("IDs" = "unique_ID")) %>%
+  left_join(abund_sort, by = c("IDs" = "Family_ncbi")) %>%
   arrange(overall) %>%
   mutate(IDs=factor(IDs, levels=IDs)) 
 
