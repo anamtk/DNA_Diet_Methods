@@ -119,7 +119,7 @@ library(here)
 library(tidyverse)
 library(ggplot2)
 library(emmeans)
-library(rcompanion)
+#library(rcompanion)
 library(effects)
 library(lattice)
 library(DHARMa)
@@ -128,20 +128,20 @@ library(glmmTMB)
 library(picante)
 library(ape)
 library(phytools)
-library(phyloseq)
+#library(phyloseq)
 
 #import metadata
 metadata <- read.csv(here("data", "Sample_Metadata.csv"))
 
 #Import ASV tables####
-d2_uc <- read.csv(here("data", "ASV_tables", "dada2_uc_asv_tab.tsv"), sep = "\t")
-d2_c <- read.csv(here("data", "ASV_tables", "dada2_c_prey_asv_tab.tsv"), sep = '\t')
-d2_um <- read.csv(here("data", "ASV_tables", "dada2_c_um_asv_tab.tsv"), sep = '\t')
-d2_pred <- read.csv(here("data", "ASV_tables", "dada2_c_pred_asv_tab.tsv"), sep = '\t')
-u3_uc <- read.csv(here("data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = '\t')
-u3_c <- read.csv(here("data", "ASV_tables", "unoise_c_prey_zotu_tab.txt"), sep = '\t')
-u3_um <- read.csv(here("data", "ASV_tables", "unoise_c_um_zotu_tab.txt"), sep = '\t')
-u3_pred <- read.csv(here("data", "ASV_tables", "unoise_c_pred_zotu_tab.txt"), sep = '\t')
+d2_uc <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_uc_asv_tab.tsv"), sep = "\t")
+d2_c <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_c_prey_asv_tab.tsv"), sep = '\t')
+d2_um <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_c_um_asv_tab.tsv"), sep = '\t')
+d2_pred <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_c_pred_asv_tab.tsv"), sep = '\t')
+u3_uc <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = '\t')
+u3_c <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_c_prey_zotu_tab.txt"), sep = '\t')
+u3_um <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_c_um_zotu_tab.txt"), sep = '\t')
+u3_pred <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_c_pred_zotu_tab.txt"), sep = '\t')
 
 #rename X to ASV in all these tables.
 d2_uc <- rename(d2_uc, "ASV" = "X")
@@ -263,6 +263,47 @@ d2_um %>%
 d2_um %>%
   summarize(sum(QC1 != 0))#1
 #Summary: cleaning does not add any ASVs to the controls, and dada2 maps better to controls
+```
+
+
+
+```{r}
+#non-zero reads should only be in the positive control samples:
+u3_pos_ct <- u3_uc %>%
+  filter(ASV %in% c("Zotu4", "Zotu2", "Zotu3")) %>%
+  gather(sample, reads, CL1:QC1) %>%
+  filter(reads > 0) %>%
+  mutate(type = "u3")
+
+############################
+#Justify UNOISE vs. DADA2####
+############################
+#also, in justifying UNOISE, want to check that the positives got more reads
+#NOTE: PUT THIS IN THE PIPELINE COMPARISON SCRIPT!!!!####
+d2 <- read.csv(here("data", "denoised_data", "ASV_tables", 
+                    "dada2_uc_asv_tab.tsv"), sep = "\t") 
+
+colnames(d2) <- sapply(str_split(colnames(d2), "_"), function(x){return(x[[1]])})
+d2 <- rename(d2, "ASV" = "X")
+
+d2_pos_cont <- d2_uc %>%
+  filter(ASV %in% c("ASV_10", "ASV_2", "ASV_16")) %>%
+  gather(sample, reads, CL1:QC1) %>%
+  filter(reads > 0) %>%
+  mutate(type = "d2")
+
+positive <- u3_pos_ct %>%
+  bind_rows(d2_pos_cont) %>%
+  group_by(sample, type) %>%
+  summarise(reads = sum(reads))
+
+positive %>%
+  group_by(type) %>%
+  summarise(mean = mean(reads), sd =sd(reads), total = n(), se = sd/sqrt(total)) %>%
+  ggplot(aes(x = type, y = mean)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  geom_errorbar(aes(ymin = mean -se, ymax = mean+se))
 ```
 
 ```{r tot ASVs, include = FALSE}
