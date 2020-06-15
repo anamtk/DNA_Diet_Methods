@@ -217,6 +217,7 @@ my_y_title_2 <- expression(paste("Percent ", italic("O. japonica"), " reads per 
 ############################
 
 plot_grid(b_2, e_2, nrow = 2, align = "vh")
+
 lab_all_nz %>%
   summarise(prop = known/total) %>%
   summarise(mean = mean(prop), total= n(), sd = sd(prop), se = sd/sqrt(total))
