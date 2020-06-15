@@ -186,7 +186,7 @@ pal2 <- c(
   scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
                     values = pal2,
                     limits = names(pal2),
-                    labels = c("0", "< 0.28", "< 0.74", "< 2.58", "< 9.47", "< 120.72")) + 
+                    labels = c("0", "< 0.28", "< 0.74", "< 2.58", "< 9.47", "> 9.47")) + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
@@ -262,7 +262,7 @@ pal2 <- c(
     scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
                       values = pal2,
                       limits = names(pal2),
-                      labels = c("0", "< 0.05", "< 0.37", "< 1.33", "< 6.78", "< 220.05")) + 
+                      labels = c("0", "< 0.05", "< 0.37", "< 1.33", "< 6.78", "> 6.78")) + 
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
@@ -461,14 +461,14 @@ comp1 <- field %>%
   filter(sum(reads) >0) %>%
   ungroup() %>%
   mutate(presence = ifelse(reads > 0, 1, 0)) %>% #make a presence-absence value
-  dplyr::select(presence, sample, unique_ID) %>% #select only the variables for matrix
-  pivot_wider(names_from = unique_ID, values_from = presence) %>% 
+  dplyr::select(presence, sample, Family_ncbi) %>% #select only the variables for matrix
+  pivot_wider(names_from = Family_ncbi, values_from = presence) %>% 
   #make column names based on unique ID, values from presence in cells
   column_to_rownames(var = "sample") 
 #set the column names to the sample, so that only numeric values are in the matrix
 
 #adonis requires a matrix as input, so we will convert df to that
-comp1 <- data.matrix(comp, rownames.force = TRUE)
+comp1 <- data.matrix(comp1, rownames.force = TRUE)
 
 #Now that those are removed, we need to remove them from the eventual metadataframe
 #we are creating next, so I will create a dataframe of those sample names to subset
