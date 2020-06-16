@@ -302,7 +302,7 @@ heat$sample <- factor(heat$sample, levels = c("HEV100", "HEV106", "HEV107", "HEV
                                               "HEV88", "HEV89", "HEV95", "HEV96", 
                                               "HEV97", "HEV98", "HEV99", "HEV101",
                                               "HEV102", "HEV103", "HEV104", "HEV105",
-                                              "HEV65", "HEV67", "HEV68", "HEV70",
+                                              "HEV65", "HEV66", "HEV67", "HEV68", "HEV70",
                                               "HEV71", "HEV74", "HEV76", "HEV90", 
                                               "HEV91", "HEV92", "HEV93", "HEV94"))
 heat$quantiles <- ifelse(heat$reads == 0, 0,
@@ -315,30 +315,23 @@ heat$quantiles <- as.factor(heat$quantiles)
 
 #these are two color palettes that could be used in this figure
 pal3 <- c(
+  '0' = "#FFFFFF",
   '1' = "#F27D72", 
   '3' = "#D26F67", 
   '4' = "#B2615C",
   '5' = "#925451"
 )
 
-pal2 <- c(
-  '0' = "#FFFFFF",
-  '1' = "#F29979", 
-  '3' = "#D2846C", 
-  '4' = "#B26F5F",
-  '5' = "#925B53"
-)
-
 heat1 <- heat %>%
   filter(reads > 0)
-(heat_map <- ggplot(heat1, aes(x = sample, y = Family, fill=quantiles, height = 0.95, width = 0.95)) +
-    geom_tile() + 
+(heat_map <- ggplot(heat, aes(x = sample, y = Family, fill=quantiles)) +
+    geom_tile(color = "black") + 
     coord_equal() +
     labs(x = "Sample", y = "Diet family") +
     scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
                       values = pal3,
                       limits = names(pal3),
-                      labels = c("< 1", "< 6", "< 25", "> 25")) + 
+                      labels = c("0", "< 1", "< 6", "< 25", "> 25")) + 
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
