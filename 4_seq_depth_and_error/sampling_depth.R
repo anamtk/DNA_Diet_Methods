@@ -1,34 +1,25 @@
+###########################
 #Sampling Depth
 #Ana Miller-ter Kuile
 #February 16, 2020
+##########################
 
 #this is code for looking at sampling depth across samples to ensure that I've
 #sufficiently sampled each sample in this dataset. 
 #this code looks at sampling depth in community matrices created by both dada2 and unoise3
 
-#sampling depth using iNEXT, first WITH predator reads, then without (first is to
-#determine actual sequencing depth, second is to determine sampling depth of prey; first
-#is bioinformatics, second is ecological question)
-#Packages ####
+#######################
+#Load packages ####
+######################
+
 library(tidyverse)
 library(here)
 library(ggplot2)
-#library(ggfortify)
-#library(GUniFrac)
-#library(vegan)
 library(iNEXT)
-#library(cowplot)
-##library(ecodist)
-#library(lme4)
-#library(broom)
-#library(MASS)
-#library(ggeffects)
-#library(glmmTMB)
-#library(DHARMa)
-#library(MuMIn)
-#library(effects)
 
-#UNOISE sequencing depth####
+#######################
+#Load and tidy data ####
+######################
 #needed here: ASV matrix by samples minus the controls and asv column
 #import data matrix
 u3_comm <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = "\t")
@@ -46,12 +37,17 @@ u3_comm_depth <- u3_comm %>%
 #remove any ASVs that have zeros across all samples (probably from removing control)
 u3_comm_depth <- u3_comm_depth[rowSums(u3_comm_depth) != 0,] #3 ASVs disappeared
 
+#######################
+#iNEXT sequencing depth####
+######################
+
 #this determines sequencing depth across all samples
 u3_seq_depth <- iNEXT(u3_comm_depth, q=0, datatype="abundance") #this determines sequencing depth for each sample
 
 #u3_seq_depth$AsyEst
-u3_seq_depth$DataInfo$SC
-u3_seq_depth$DataInfo
+u3_seq_depth$DataInfo$SC #look at sampling completeness
+u3_seq_depth$DataInfo #gets per sample richness, etc
+#other parts of the iNEXT object that could be useful:
 #seq_depth$iNextEst
 #seq_depth$AsyEst
 #seq_depth$iNextEst
