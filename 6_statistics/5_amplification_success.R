@@ -3,6 +3,8 @@
 # Ana Miller-ter Kuile
 # June 1, 2020
 ############################
+
+#just stats on amplification success for the results section of paper
 library(here)
 library(tidyverse)
 amp <- read.csv(here("data", "Amplification_Success.csv"))
