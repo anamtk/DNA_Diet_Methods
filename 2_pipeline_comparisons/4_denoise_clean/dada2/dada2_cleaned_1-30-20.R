@@ -1,7 +1,12 @@
+#########################
 #Cleaned dataset dada2 methods
 #Ana Miller-ter Kuile
 #January 29, 2020
-#Installs####
+#########################
+
+#########################
+#Packages####
+#########################
 #this code checks that all pacakges are up  to date
 BiocManager::valid()
 
@@ -21,7 +26,10 @@ library(here)
 #from Happy Belly Bioinformatics code chunk:
 list.files() # make sure what we think is here is actually here
 
+#########################
 #Unmapped####
+#########################
+
 ## first we're setting a few variables we're going to use ##
 # one with all sample names, by scanning our "samples" file we made earlier
 #if you don't have this variable, you can make it in the terminal with this
@@ -183,7 +191,10 @@ asv_tab <- t(seqtab.nochim)
 row.names(asv_tab) <- sub(">", "", asv_headers)
 write.table(asv_tab, "dada2_c_um_asv_tab.tsv", sep="\t", quote=F, col.names=NA)
 
+#########################
 #Predators####
+#########################
+
 ## first we're setting a few variables we're going to use ##
 # one with all sample names, by scanning our "samples" file we made earlier
 #if you don't have this variable, you can make it in the terminal with this
@@ -350,7 +361,9 @@ write.table(asv_tab, "dada2_c_pred_asv_tab.tsv", sep="\t", quote=F, col.names=NA
 #row.names(asv_tax) <- sub(">", "", asv_headers)
 #write.table(asv_tax, "ASVs_taxonomy.tsv", sep="\t", quote=F, col.names=NA)
 
+#########################
 #Prey####
+#########################
 ## first we're setting a few variables we're going to use ##
 # one with all sample names, by scanning our "samples" file we made earlier
 #if you don't have this variable, you can make it in the terminal with this
