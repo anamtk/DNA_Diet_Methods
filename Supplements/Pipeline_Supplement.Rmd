@@ -50,7 +50,7 @@ knitr::include_graphics(here("Pictures", "experiment_setup.png"))
 We ran all samples on an Illumina MiSeq platform at the UCSB Genetics Core. We cleaned low-quality sequences from this set of ~15 million sequences returned from the genetics core, and then used two clustering pipelines (DADA2 and UNOISE3) that use sequence abundance and quality to combine similar sequences (which are often different because of errors in amplification or sequencing and actually represent the same sequence) into clusters representing the most common real sequence. We performed each of these clustering pipelines twice: once on the complete list of sequences, and once on a set of sequences that had been "cleaned" of predator and non-diet sequences using the program BBSplit. After the denoising/clustering process, we are left with a matrix very similar to any community matrix, with columns corresponding to each sample (spider individual) and rows corresponding to ASVs (sequences) in that individual. In this way, each spider becomes functionally a "community" of species which can be treated very similarly to any other matrix of community data (i.e. in vegan with multidimensional analyses, etc). 
 
 ```{r an example matrix, echo=FALSE}
-matrix_example <- read.csv(here("data", "ASV_tables", "dada2_uc_asv_tab.tsv"), sep= "\t")
+matrix_example <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_uc_asv_tab.tsv"), sep= "\t")
 matrix_example_small <- matrix_example[1:10,]
 matrix_example_smaller <- matrix_example_small[c(1, 4:9)]
 head(matrix_example_smaller, n=10)
@@ -84,7 +84,7 @@ head(matrix_example_smaller, n=10)
 #February 14, 2020
 
 #This script will look at the ASV/ZOTU tables created by each of my pipelines for prey
-#items (dada2 and unoise with clean and unclean) and summarize each based on items of
+#items (dada2 and unoise with clean and unclean) and summarise each based on items of
 #interest, including:
 #1. positive and negative control mapping
 
@@ -192,13 +192,13 @@ u3_uc <- rename(u3_uc, "ASV" = "A")
 #1. positive and negative control mapping ####
 #dada2 uncleaned
 cl1_d2uc <- d2_uc %>%
-  summarize(count = sum(CL1 != 0)) %>% #1
+  summarise(count = sum(CL1 != 0)) %>% #1
   mutate(pipeline = "d2uc", control = "CL1") 
 cl4_d2uc <- d2_uc %>%
-  summarize(count = sum(CL4 != 0)) %>% 
+  summarise(count = sum(CL4 != 0)) %>% 
   mutate(pipeline = "d2uc", control = "CL4") #1
 qc1_d2uc <- d2_uc %>%
-  summarize(count = sum(QC1 != 0)) %>%
+  summarise(count = sum(QC1 != 0)) %>%
   mutate(pipeline = "d2uc", control = "CL4") #1
 #NEG is ZERO
 neg_d2uc <- as.data.frame(0)
@@ -209,16 +209,16 @@ neg_d2uc <- neg_d2uc %>%
 
 #usearch uncleaned
 cl1u3uc <- u3_uc %>%
-  summarize(count = sum(CL1 != 0)) %>% #3
+  summarise(count = sum(CL1 != 0)) %>% #3
   mutate(pipeline = "u3uc", control = "CL1")
 cl4u3uc <- u3_uc %>%
-  summarize(count = sum(CL4 != 0)) %>% #3
+  summarise(count = sum(CL4 != 0)) %>% #3
   mutate(pipeline = "u3uc", control = "CL4")
 qc1u3uc <- u3_uc %>%
-  summarize(count = sum(QC1 != 0)) %>% #3
+  summarise(count = sum(QC1 != 0)) %>% #3
   mutate(pipeline = "u3uc", control = "QC1")
 negu3uc <- u3_uc %>%
-  summarize(count = sum(NEG != 0)) %>% #1
+  summarise(count = sum(NEG != 0)) %>% #1
   mutate(pipeline = "u3uc", control = "NEG")
 
 #both cleaned map to zero
@@ -246,22 +246,22 @@ control_count_plot <- ggplot(control_counts, aes(x = pipeline, y = count)) +
 colnames(d2_pred)
 colnames(u3_pred)
 u3_pred %>%
-  summarize(sum(NEG != 0)) #1
+  summarise(sum(NEG != 0)) #1
 
 #no new ASVs get mapped in the cleaned out unmapped sequences 
 u3_um %>%
-  summarize(sum(CL1 != 0))#3
+  summarise(sum(CL1 != 0))#3
 u3_um %>%
-  summarize(sum(CL4 != 0))#3
+  summarise(sum(CL4 != 0))#3
 u3_um %>%
-  summarize(sum(QC1 != 0))#3
+  summarise(sum(QC1 != 0))#3
 
 d2_um %>%
-  summarize(sum(CL1 != 0))#1
+  summarise(sum(CL1 != 0))#1
 d2_um %>%
-  summarize(sum(CL4 != 0))#1
+  summarise(sum(CL4 != 0))#1
 d2_um %>%
-  summarize(sum(QC1 != 0))#1
+  summarise(sum(QC1 != 0))#1
 #Summary: cleaning does not add any ASVs to the controls, and dada2 maps better to controls
 ```
 
@@ -297,12 +297,13 @@ positive <- u3_pos_ct %>%
   group_by(sample, type) %>%
   summarise(reads = sum(reads))
 
-positive %>%
+pos_reads <- positive %>%
   group_by(type) %>%
   summarise(mean = mean(reads), sd =sd(reads), total = n(), se = sd/sqrt(total)) %>%
   ggplot(aes(x = type, y = mean)) +
   geom_bar(stat = "identity", position = "dodge") +
   theme_bw() +
+  labs(x = "Pipeline", y ="Average reads per positive control") +
   geom_errorbar(aes(ymin = mean -se, ymax = mean+se))
 ```
 
@@ -312,28 +313,28 @@ positive %>%
 nrow(d2_uc) #214 total ASVs
 #by sample:
 d2_ASVct <- d2_uc %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, ASVs_d2uc, ASV:QC1, factor_key = TRUE) 
 
 #unoise3 uc
 nrow(u3_uc) #176 total ASVs
 #by sample:
 u3_ASVct <- u3_uc %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, ASVs_u3uc, ASV:QC1, factor_key = TRUE)
 
 #dada2 c
 nrow(d2_c) #138 total ASVs
 #by sample:
 d2c_ASVct <- d2_c %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, ASVs_d2c, ASV:HEV89, factor_key = TRUE)
 
 #unoise3 c
 nrow(u3_c) #99 total ASVs
 #by sample:
 u3c_ASVct <- u3_c %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, ASVs_u3c, ASV:HEV99, factor_key = TRUE)
 
 #join these two together
@@ -395,7 +396,7 @@ pairs(model.emm_totASV)
 
 
 x_totASV <- residuals(tot_ASV_mod)
-plotNormalHistogram(x_totASV)
+plot(x_totASV)
 #residuals look relatively normal
 plot(residuals(tot_ASV_mod)) #residuals look fairly homoskedastic
 plot(allEffects(tot_ASV_mod))
@@ -439,12 +440,12 @@ nrow(u3_c) + nrow(u3_um) + nrow(u3_pred) #196
 #matrix for each pipeline (clean and unclean) to their taxonomic categories
 #DADA2 UNCLEAN#
 #import both NCBI and BOLD taxonomies
-d2_uc_ncbi <- read.csv(here("6_taxonomic_assignment", "MEGAN", "dada2_unclean",
+d2_uc_ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_unclean",
                             "dada2_uc_ncbi_taxa.csv"))
 #this is everything that got a taxonomic assignment through MEGAN
-d2_uc_all <- read.csv(here("6_taxonomic_assignment", "MEGAN", "dada2_unclean",
+d2_uc_all <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_unclean",
                            "dada2_uc_all.csv"))
-d2_uc_bold <- read.csv(here("6_taxonomic_assignment", "BOLD", "dada2_uc", 
+d2_uc_bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "dada2_uc", 
                             "dada2_uc_taxa_bold.csv"))
 d2_uc_bold <- rename(d2_uc_bold, "ASV" = "Query.ID")
 
@@ -516,12 +517,12 @@ write.csv(d2_uc_taxonomies, here("data", "d2_uc_tax_ass.csv"))
 
 #DADA2 CLEAN##
 #import both NCBI and BOLD taxonomies
-d2_c_ncbi <- read.csv(here("6_taxonomic_assignment", "MEGAN", "dada2_clean",
+d2_c_ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_clean",
                            "prey", "dada2_c_prey_ncbi_taxa.csv"))
 #this is everything that got a taxonomic assignment through MEGAN
-d2_c_all <- read.csv(here("6_taxonomic_assignment", "MEGAN", "dada2_clean",
+d2_c_all <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_clean",
                            "prey", "dada2_c_prey_ALL.csv"))
-d2_c_bold <- read.csv(here("6_taxonomic_assignment", "BOLD", "dada2_c", 
+d2_c_bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "dada2_c", 
                             "prey", "dada2_c_prey_taxa_bold.csv"))
 
 #Sort by "predator", "prey", and "non-diet" before merging into one 
@@ -591,9 +592,9 @@ write.csv(d2_c_taxonomies, here("data", "d2_c_tax_ass.csv"))
 
 #UNOISE UNCLEAN##
 #import both NCBI and BOLD taxonomies
-u3_uc_ncbi <- read.csv(here("6_taxonomic_assignment", "MEGAN", "unoise_unclean",
+u3_uc_ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "unoise_unclean",
                            "unoise_uc_ncbi_taxa.csv"))
-u3_uc_bold <- read.csv(here("6_taxonomic_assignment", "BOLD", "usearch_uc", 
+u3_uc_bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "usearch_uc", 
                            "unoise_uc_bold_taxa.csv"))
 u3_uc_bold <- rename(u3_uc_bold, "ASV" = "Query.ID")
 
@@ -653,9 +654,9 @@ write.csv(u3_uc_taxonomies, here("data", "u3_uc_tax_ass.csv"))
 
 #UNOISE CLEAN##
 #import both NCBI and BOLD taxonomies
-u3_c_ncbi <- read.csv(here("6_taxonomic_assignment", "MEGAN", "unoise_clean",
+u3_c_ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "unoise_clean",
                             "prey", "unoise_c_prey_ALL_ncbi_taxa.csv"))
-u3_c_bold <- read.csv(here("6_taxonomic_assignment", "BOLD", "usearch_c", 
+u3_c_bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "usearch_c", 
                             "prey", "unoise3_c_prey_bold_taxa.csv"))
 u3_c_bold <- rename(u3_c_bold, "ASV" = "Query.ID")
 
@@ -716,30 +717,30 @@ write.csv(u3_c_taxonomies, here("data", "u3_c_tax_ass.csv"))
 
 ```{r, include=FALSE}
 #3. total number of prey ASVs for each pipeline ####
-#summarize each dataframe by sample (which also gives ASVs in the ASV category)
+#summarise each dataframe by sample (which also gives ASVs in the ASV category)
 #grouped by taxonomy, giving both a total ASV count in each category AND
 #a per sample value for each category (no hit, non-diet, predator, prey, unknown)
 d2_uc_ASVs <- d2_uc_id_tab %>%
   group_by(taxonomy) %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, ASVs_d2_uc, ASV:QC1, factor_key=TRUE) %>%
   dplyr::select(taxonomy, sample, ASVs_d2_uc)
   
 d2_c_ASVs <- d2_c_id_tab %>%
   group_by(taxonomy) %>%
-  summarize_all(~sum(. !=0)) %>%
+  summarise_all(~sum(. !=0)) %>%
   gather(sample, ASVs_d2_c, ASV:HEV89, factor_key = TRUE) %>%
   dplyr::select(taxonomy, sample, ASVs_d2_c)
 
 u3_uc_ASVs <- u3_uc_id_tab %>%
   group_by(taxonomy) %>%
-  summarize_all(~sum(. !=0)) %>%
+  summarise_all(~sum(. !=0)) %>%
   gather(sample, ASVs_u3_uc, ASV:QC1, factor_key = TRUE) %>%
   dplyr::select(taxonomy, sample, ASVs_u3_uc)
 
 u3_c_ASVs <- u3_c_id_tab %>%
   group_by(taxonomy) %>%
-  summarize_all(~sum(. !=0)) %>%
+  summarise_all(~sum(. !=0)) %>%
   gather(sample, ASVs_u3_c, ASV:HEV99, factor_key = TRUE) %>%
   dplyr::select(taxonomy, sample, ASVs_u3_c)
 
@@ -796,7 +797,7 @@ model.emm_preyASV <- emmeans(lme_prey_ASVs, "pipeline")
 pairs(model.emm_preyASV)
 
 x_preyASV <- residuals(lme_prey_ASVs)
-plotNormalHistogram(x_preyASV)
+plot(x_preyASV)
 #residuals look relatively normal
 summary(lme_prey_ASVs)
 plot(residuals(lme_prey_ASVs)) #residuals look fairly homoskedastic
@@ -826,28 +827,28 @@ d2_uc_reads <- d2_uc_id_tab %>%
   group_by(ASV) %>%
   gather(sample, reads, CL1:QC1, factor_key = TRUE) %>%
   group_by(sample, taxonomy) %>%
-  summarize(reads_d2_uc = sum(reads))
+  summarise(reads_d2_uc = sum(reads))
 
 d2_c_reads <- d2_c_id_tab %>%
   dplyr::select(-ID_bold, -Order_bold, -ID_ncbi, -Order_ncbi, -ID_nondiet, -Category) %>%
   group_by(ASV) %>%
   gather(sample, reads, HEV100:HEV89, factor_key=TRUE) %>%
   group_by(sample, taxonomy) %>%
-  summarize(reads_d2_c = sum(reads))
+  summarise(reads_d2_c = sum(reads))
 
 u3_uc_reads <- u3_uc_id_tab %>%
   dplyr::select(-ID_bold, -Order_bold, -ID_ncbi, -Order_ncbi) %>%
   group_by(ASV) %>%
   gather(sample, reads, CL1:QC1, factor_key = TRUE) %>%
   group_by(sample, taxonomy) %>%
-  summarize(reads_u3_uc = sum(reads))
+  summarise(reads_u3_uc = sum(reads))
 
 u3_c_reads <- u3_c_id_tab %>%
   dplyr::select(-ID_bold, -Order_bold, -ID_ncbi, -Order_ncbi) %>%
   group_by(ASV) %>%
   gather(sample, reads, HEV07:HEV99, factor_key=TRUE) %>%
   group_by(sample, taxonomy) %>%
-  summarize(reads_u3_c = sum(reads))
+  summarise(reads_u3_c = sum(reads))
   
 #join these all together now
 taxa_reads <- d2_uc_reads %>%
@@ -895,7 +896,7 @@ model.emm_preyreads <- emmeans(read_mod, "pipeline")
 pairs(model.emm_preyreads)
 
 x_read <- residuals(read_mod)
-plotNormalHistogram(x_read)
+plot(x_read)
 #residuals look relatively normal
 summary(read_mod)
 plot(residuals(read_mod)) #residuals look fairly homoskedastic
@@ -1002,7 +1003,7 @@ pairs(model.emm_preyprop)
 #of using DADA2 for BBSPLIT, TBH). 
 
 x_prop <- residuals(prey_prop_mod)
-plotNormalHistogram(x_prop)
+plot(x_prop)
 #residuals look relatively normal
 plot(residuals(prey_prop_mod)) #residuals look fairly homoskedastic
 plot(allEffects(prey_prop_mod)) #some version of this I think would be a good paper figure
@@ -1087,10 +1088,10 @@ AICc(prey_rprop_mod, prey_rprop_mod_null)
 
 
 x_rprop <- residuals(prey_rprop_mod)
-plotNormalHistogram(x_rprop)
+plot(x_rprop)
 #residuals look relatively normal
 plot(residuals(prey_rprop_mod)) #residuals look fairly homoskedastic
-plot(allEffects(prey_rprop_mod)) #some version of this I think would be a good paper figure
+#plot(allEffects(prey_rprop_mod)) #some version of this I think would be a good paper figure
 #but ideally prettier
 
 #checking other model assumptions here:
@@ -1209,7 +1210,7 @@ prey_rprop_graph <- ggplot(read_totals_samples, aes(x = pipeline, y = prey/tot))
 #d2_c_id_tab
 #u3_uc_id_tab
 #d2_ASVct <- d2_uc %>%
-#  summarize_all(~sum(. != 0)) %>%
+#  summarise_all(~sum(. != 0)) %>%
 #  gather(sample, ASVs_d2uc, ASV:QC1, factor_key = TRUE) 
 #u3_c_id_tab
 
@@ -1220,28 +1221,28 @@ d2_uc_lab <- d2_uc_id_tab %>%
   dplyr::select(all_of(lab), ID_bold, ID_ncbi, ID_nondiet) %>%
   filter(ID_ncbi == "Acrididae") %>%
   dplyr::select(-ID_bold, -ID_ncbi, -ID_nondiet) %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, prey_d2uc, HEV07:HEV29, factor_key=TRUE)
 
 d2_c_lab <- d2_c_id_tab %>%
   dplyr::select(all_of(lab), ID_bold, ID_ncbi, ID_nondiet) %>%
   filter(ID_ncbi == "Acrididae") %>%
   dplyr::select(-ID_bold, -ID_ncbi, -ID_nondiet) %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, prey_d2c, HEV07:HEV29, factor_key=TRUE)
 
 u3_uc_lab <- u3_uc_id_tab %>%
   dplyr::select(all_of(lab), ID_bold, ID_ncbi) %>%
   filter(ID_ncbi == "Acrididae") %>%
   dplyr::select(-ID_bold, -ID_ncbi) %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, prey_u3uc, HEV07:HEV29, factor_key=TRUE)
 
 u3_c_lab <- u3_c_id_tab %>%
   dplyr::select(all_of(lab), ID_bold, ID_ncbi) %>%
   filter(ID_ncbi == "Acrididae") %>%
   dplyr::select(-ID_bold, -ID_ncbi) %>%
-  summarize_all(~sum(. != 0)) %>%
+  summarise_all(~sum(. != 0)) %>%
   gather(sample, prey_u3c, HEV07:HEV29, factor_key=TRUE)
 
 #join these two together
@@ -1308,7 +1309,7 @@ d2_uc_rlab <- d2_uc_id_tab %>%
   group_by(ASV) %>%
   gather(sample, reads, HEV07:HEV29, factor_key = TRUE) %>%
   group_by(sample) %>%
-  summarize(reads_d2_uc = sum(reads))
+  summarise(reads_d2_uc = sum(reads))
 
 d2_c_rlab <- d2_c_id_tab %>%
   dplyr::select(all_of(lab), ASV, ID_bold, ID_ncbi, ID_nondiet) %>%
@@ -1317,7 +1318,7 @@ d2_c_rlab <- d2_c_id_tab %>%
   group_by(ASV) %>%
   gather(sample, reads, HEV07:HEV29, factor_key = TRUE) %>%
   group_by(sample) %>%
-  summarize(reads_d2_c = sum(reads))
+  summarise(reads_d2_c = sum(reads))
 
 u3_uc_rlab <- u3_uc_id_tab %>%
   dplyr::select(all_of(lab), ASV, ID_bold, ID_ncbi) %>%
@@ -1326,7 +1327,7 @@ u3_uc_rlab <- u3_uc_id_tab %>%
   group_by(ASV) %>%
   gather(sample, reads, HEV07:HEV29, factor_key = TRUE) %>%
   group_by(sample) %>%
-  summarize(reads_u3_uc = sum(reads))
+  summarise(reads_u3_uc = sum(reads))
 
 u3_c_rlab <- u3_c_id_tab %>%
   dplyr::select(all_of(lab), ASV, ID_bold, ID_ncbi) %>%
@@ -1335,7 +1336,7 @@ u3_c_rlab <- u3_c_id_tab %>%
   group_by(ASV) %>%
   gather(sample, reads, HEV07:HEV29, factor_key = TRUE) %>%
   group_by(sample) %>%
-  summarize(reads_u3_c = sum(reads))
+  summarise(reads_u3_c = sum(reads))
 
 #join these two together
 known_prey_reads <- d2_uc_rlab %>%
@@ -1372,7 +1373,7 @@ model.emm_knownprey <- emmeans(known_reads_mod, "pipeline")
 pairs(model.emm_knownprey)
 
 x_knownprey <- residuals(known_reads_mod)
-plotNormalHistogram(x_knownprey)
+plot(x_knownprey)
 #residuals look relatively normal
 summary(known_reads_mod)
 plot(residuals(known_reads_mod)) #eek
@@ -1393,7 +1394,7 @@ known_prey_plot <- ggplot(known_reads_long, aes(x = pipeline, y = value)) +
 ```
 
 
-``` {r, include = FALSE}
+``` {r, include = FALSE, eval = FALSE}
 #Intermediate: Phylogenetic trees of prey ASVs ####
 #currently I have not included phylogenies from BOLD in this, 
 #which... maybe doesn't need to happen? I dont' know sigh
@@ -1412,13 +1413,13 @@ known_prey_plot <- ggplot(known_reads_long, aes(x = pipeline, y = value)) +
 #the total possible diversity of any pipeline)
 #I created a tree at the Order level and at the Family level
 #then, MEGAN didn't compute branch lengths, so I did
-ord_tree <- read.tree(here("6_taxonomic_assignment", "bilateria_order.tre"))
+ord_tree <- read.tree(here("3_taxonomic_assignment", "bilateria_order.tre"))
 ord_tree1 <- compute.brlen(ord_tree, method = "Grafen")
 ord_tree2 <- di2multi(ord_tree1) #this collapses multichotomies so that branch
 #lengths aren't domianted by zeros
 
 #same for family tree
-fam_tree <- read.tree(here("6_taxonomic_assignment", "bilateria_family.tre"))
+fam_tree <- read.tree(here("3_taxonomic_assignment", "bilateria_family.tre"))
 fam_tree1 <- compute.brlen(fam_tree, method = "Grafen")
 fam_tree2 <- di2multi(fam_tree1)
 fam_tree2$edge.length
@@ -1440,7 +1441,7 @@ d2_uc_sum <- d2_uc %>%
   dplyr::select(-CL1, -CL4, -QC1) %>% #remove controls
   gather(sample, reads, HEV100:HEV89) %>% #gather by ASV and sample
   group_by(ASV) %>% #group by ASV
-  summarize(reads= sum(reads)) %>% #summarize the total reads in each ASV
+  summarise(reads= sum(reads)) %>% #summarise the total reads in each ASV
   filter(reads > 0) #filter only those that are greater than 0
 
 d2_uc_ncbi$ASV <- as.character(d2_uc_ncbi$ASV)
@@ -1458,12 +1459,12 @@ d2_uc_phy_tab_ord <- d2_uc_phy_tab %>%
   na_if("") %>%
   drop_na(Order) #46 observations, so 9 had no order ID
 
-#gather by sample and group by sample and Order to summarize how many are in each order
+#gather by sample and group by sample and Order to summarise how many are in each order
 #(we are removing duplicate orders by combining them here). Then spread back out to a 
 #community matrix with samples as the columns and orders in those samples as rows
 d2_uc_phy_tab_ord <- d2_uc_phy_tab_ord %>%
   group_by(Order) %>%
-  summarize(reads = sum(reads))  #14 ORDERS
+  summarise(reads = sum(reads))  #14 ORDERS
 
 #set rownames to ID column, and then remove that column
 rownames(d2_uc_phy_tab_ord) <- d2_uc_phy_tab_ord$Order
@@ -1476,14 +1477,14 @@ d2_uc_phy_tab_ord_t <- as.data.frame(t(d2_uc_phy_tab_ord))
 #finally, use this community matrix for each pipeline plus the 
 #meta phylogeny from both Unoise and DADA2 to calculate Faith's PD
 #for each sample
-pd_d2uc_ord <- pd(d2_uc_phy_tab_ord_t, ord_tree2, include.root=TRUE)
+pd_d2uc_ord <- picante::pd(d2_uc_phy_tab_ord_t, ord_tree2, include.root=TRUE)
 pd_d2uc_ord$pipeline <- "d2_uc"
 #UNOISE 3 UC
 u3_uc_sum <- u3_uc %>%
   dplyr::select(-CL1, -CL4, -QC1, -NEG) %>% #remove controls
   gather(sample, reads, HEV15:HEV83) %>% #gather by ASV and sample
   group_by(ASV) %>% #group by ASV
-  summarize(reads= sum(reads)) %>% #summarize the total reads in each ASV
+  summarise(reads= sum(reads)) %>% #summarise the total reads in each ASV
   filter(reads > 0) #filter only those that are greater than 0
 
 u3_uc_ncbi$ASV <- as.character(u3_uc_ncbi$ASV)
@@ -1501,12 +1502,12 @@ u3_uc_phy_tab_ord <- u3_uc_phy_tab %>%
   na_if("") %>%
   drop_na(Order) #43 observations
 
-#gather by sample and group by sample and Order to summarize how many are in each order
+#gather by sample and group by sample and Order to summarise how many are in each order
 #(we are removing duplicate orders by combining them here). Then spread back out to a 
 #community matrix with samples as the columns and orders in those samples as rows
 u3_uc_phy_tab_ord <- u3_uc_phy_tab_ord %>%
   group_by(Order) %>%
-  summarize(reads = sum(reads, na.rm = TRUE))  #13 ORDERS
+  summarise(reads = sum(reads, na.rm = TRUE))  #13 ORDERS
 
 #set rownames to ID column, and then remove that column
 rownames(u3_uc_phy_tab_ord) <- u3_uc_phy_tab_ord$Order
@@ -1519,7 +1520,7 @@ u3_uc_phy_tab_ord_t <- as.data.frame(t(u3_uc_phy_tab_ord))
 #finally, use this community matrix for each pipeline plus the 
 #meta phylogeny from both Unoise and DADA2 to calculate Faith's PD
 #for each sample
-pd_u3uc_ord <- pd(u3_uc_phy_tab_ord_t, ord_tree2, include.root=TRUE)
+pd_u3uc_ord <- picante::pd(u3_uc_phy_tab_ord_t, ord_tree2, include.root=TRUE)
 pd_u3uc_ord$pipeline <- "u3_uc"
 #DADA2 CLEAN ##
 #need to combine and add all ASV reads across all samples to
@@ -1528,7 +1529,7 @@ pd_u3uc_ord$pipeline <- "u3_uc"
 d2_c_sum <- d2_c %>%
   gather(sample, reads, HEV100:HEV89) %>% #gather by ASV and sample
   group_by(ASV) %>% #group by ASV
-  summarize(reads= sum(reads)) %>% #summarize the total reads in each ASV
+  summarise(reads= sum(reads)) %>% #summarise the total reads in each ASV
   filter(reads > 0) #filter only those that are greater than 0
 
 d2_c_ncbi$ASV <- as.character(d2_c_ncbi$ASV)
@@ -1546,12 +1547,12 @@ d2_c_phy_tab_ord <- d2_c_phy_tab %>%
   na_if("") %>%
   drop_na(Order) #49 observations
 
-#gather by sample and group by sample and Order to summarize how many are in each order
+#gather by sample and group by sample and Order to summarise how many are in each order
 #(we are removing duplicate orders by combining them here). Then spread back out to a 
 #community matrix with samples as the columns and orders in those samples as rows
 d2_c_phy_tab_ord <- d2_c_phy_tab_ord %>%
   group_by(Order) %>%
-  summarize(reads = sum(reads))  #14 ORDERS
+  summarise(reads = sum(reads))  #14 ORDERS
 
 #set rownames to ID column, and then remove that column
 rownames(d2_c_phy_tab_ord) <- d2_c_phy_tab_ord$Order
@@ -1564,13 +1565,13 @@ d2_c_phy_tab_ord_t <- as.data.frame(t(d2_c_phy_tab_ord))
 #finally, use this community matrix for each pipeline plus the 
 #meta phylogeny from both Unoise and DADA2 to calculate Faith's PD
 #for each sample
-pd_d2c_ord <- pd(d2_c_phy_tab_ord_t, ord_tree2, include.root=TRUE)
+pd_d2c_ord <- picante::pd(d2_c_phy_tab_ord_t, ord_tree2, include.root=TRUE)
 pd_d2c_ord$pipeline <- "d2_c"
 #UNOISE 3 UC
 u3_c_sum <- u3_c %>%
   gather(sample, reads, HEV07:HEV99) %>% #gather by ASV and sample
   group_by(ASV) %>% #group by ASV
-  summarize(reads= sum(reads)) %>% #summarize the total reads in each ASV
+  summarise(reads= sum(reads)) %>% #summarise the total reads in each ASV
   filter(reads > 0) #filter only those that are greater than 0
 
 u3_c_ncbi$ASV <- as.character(u3_c_ncbi$ASV)
@@ -1588,12 +1589,12 @@ u3_c_phy_tab_ord <- u3_c_phy_tab %>%
   na_if("") %>%
   drop_na(Order) #43 observations
 
-#gather by sample and group by sample and Order to summarize how many are in each order
+#gather by sample and group by sample and Order to summarise how many are in each order
 #(we are removing duplicate orders by combining them here). Then spread back out to a 
 #community matrix with samples as the columns and orders in those samples as rows
 u3_c_phy_tab_ord <- u3_c_phy_tab_ord %>%
   group_by(Order) %>%
-  summarize(reads = sum(reads, na.rm = TRUE))  #11 ORDERS
+  summarise(reads = sum(reads, na.rm = TRUE))  #11 ORDERS
 
 #set rownames to ID column, and then remove that column
 rownames(u3_c_phy_tab_ord) <- u3_c_phy_tab_ord$Order
@@ -1606,7 +1607,7 @@ u3_c_phy_tab_ord_t <- as.data.frame(t(u3_c_phy_tab_ord))
 #finally, use this community matrix for each pipeline plus the 
 #meta phylogeny from both Unoise and DADA2 to calculate Faith's PD
 #for each sample
-pd_u3c_ord <- pd(u3_c_phy_tab_ord_t, ord_tree2, include.root=TRUE)
+pd_u3c_ord <- picante::pd(u3_c_phy_tab_ord_t, ord_tree2, include.root=TRUE)
 pd_u3c_ord$pipeline <- "u3_c"
 
 #bind together
@@ -1629,12 +1630,12 @@ d2_uc_phy_tab_fam <- d2_uc_phy_tab %>%
   na_if("") %>%
   drop_na(Family) #28 observations
 
-#gather by sample and group by sample and Family to summarize how many are in each family
+#gather by sample and group by sample and Family to summarise how many are in each family
 #(we are removing duplicate families by combining them here). Then spread back out to a 
 #community matrix with samples as the columns and families in those samples as rows
 d2_uc_phy_tab_fam <- d2_uc_phy_tab_fam %>%
   group_by(Family) %>%
-  summarize(reads = sum(reads)) #17 families
+  summarise(reads = sum(reads)) #17 families
 
 #set rownames to ID column, and then remove that column
 rownames(d2_uc_phy_tab_fam) <- d2_uc_phy_tab_fam$Family
@@ -1647,7 +1648,7 @@ d2_uc_phy_tab_fam_t <- as.data.frame(t(d2_uc_phy_tab_fam))
 #finally, use this community matrix for each pipeline plus the 
 #meta phylogeny from both Unoise and DADA2 to calculate Faith's PD
 #for each sample
-pd_d2uc_fam <- pd(d2_uc_phy_tab_fam_t, fam_tree2, include.root=TRUE)
+pd_d2uc_fam <- picante::pd(d2_uc_phy_tab_fam_t, fam_tree2, include.root=TRUE)
 pd_d2uc_fam$pipeline <- "d2_uc"
 #UNOISE Unclean##
 #create a family dataframe first by selecting only family column and
@@ -1657,12 +1658,12 @@ u3_uc_phy_tab_fam <- u3_uc_phy_tab %>%
   na_if("") %>%
   drop_na(Family) #25 observations
 
-#gather by sample and group by sample and Family to summarize how many are in each family
+#gather by sample and group by sample and Family to summarise how many are in each family
 #(we are removing duplicate families by combining them here). Then spread back out to a 
 #community matrix with samples as the columns and families in those samples as rows
 u3_uc_phy_tab_fam <- u3_uc_phy_tab_fam %>%
   group_by(Family) %>%
-  summarize(reads = sum(reads, na.rm=TRUE)) #16 families
+  summarise(reads = sum(reads, na.rm=TRUE)) #16 families
 
 #set rownames to ID column, and then remove that column
 rownames(u3_uc_phy_tab_fam) <- u3_uc_phy_tab_fam$Family
@@ -1675,7 +1676,7 @@ u3_uc_phy_tab_fam_t <- as.data.frame(t(u3_uc_phy_tab_fam))
 #finally, use this community matrix for each pipeline plus the 
 #meta phylogeny from both Unoise and DADA2 to calculate Faith's PD
 #for each sample
-pd_u3uc_fam <- pd(u3_uc_phy_tab_fam_t, fam_tree2, include.root=TRUE)
+pd_u3uc_fam <- picante::pd(u3_uc_phy_tab_fam_t, fam_tree2, include.root=TRUE)
 pd_u3uc_fam$pipeline <- "u3_uc"
 #DADA2 CLEAN
 #create a family dataframe first by selecting only family column and
@@ -1685,12 +1686,12 @@ d2_c_phy_tab_fam <- d2_c_phy_tab %>%
   na_if("") %>%
   drop_na(Family) #31 observations
 
-#gather by sample and group by sample and Family to summarize how many are in each family
+#gather by sample and group by sample and Family to summarise how many are in each family
 #(we are removing duplicate families by combining them here). Then spread back out to a 
 #community matrix with samples as the columns and families in those samples as rows
 d2_c_phy_tab_fam <- d2_c_phy_tab_fam %>%
   group_by(Family) %>%
-  summarize(reads = sum(reads, na.rm=TRUE)) #17 families
+  summarise(reads = sum(reads, na.rm=TRUE)) #17 families
 
 #set rownames to ID column, and then remove that column
 rownames(d2_c_phy_tab_fam) <- d2_c_phy_tab_fam$Family
@@ -1703,7 +1704,7 @@ d2_c_phy_tab_fam_t <- as.data.frame(t(d2_c_phy_tab_fam))
 #finally, use this community matrix for each pipeline plus the 
 #meta phylogeny from both Unoise and DADA2 to calculate Faith's PD
 #for each sample
-pd_d2c_fam <- pd(d2_c_phy_tab_fam_t, fam_tree2, include.root=TRUE)
+pd_d2c_fam <- picante::pd(d2_c_phy_tab_fam_t, fam_tree2, include.root=TRUE)
 pd_d2c_fam$pipeline <- "d2_c"
 #UNOISE CLEAn##
 #create a family dataframe first by selecting only family column and
@@ -1713,12 +1714,12 @@ u3_c_phy_tab_fam <- u3_c_phy_tab %>%
   na_if("") %>%
   drop_na(Family) # 24 observations
 
-#gather by sample and group by sample and Family to summarize how many are in each family
+#gather by sample and group by sample and Family to summarise how many are in each family
 #(we are removing duplicate families by combining them here). Then spread back out to a 
 #community matrix with samples as the columns and families in those samples as rows
 u3_c_phy_tab_fam <- u3_c_phy_tab_fam %>%
   group_by(Family) %>%
-  summarize(reads = sum(reads, na.rm=TRUE)) #15 families
+  summarise(reads = sum(reads, na.rm=TRUE)) #15 families
 
 #set rownames to ID column, and then remove that column
 rownames(u3_c_phy_tab_fam) <- u3_c_phy_tab_fam$Family
@@ -1731,7 +1732,7 @@ u3_c_phy_tab_fam_t <- as.data.frame(t(u3_c_phy_tab_fam))
 #finally, use this community matrix for each pipeline plus the 
 #meta phylogeny from both Unoise and DADA2 to calculate Faith's PD
 #for each sample
-pd_u3c_fam <- pd(u3_c_phy_tab_fam_t, fam_tree2, include.root=TRUE)
+pd_u3c_fam <- picante::pd(u3_c_phy_tab_fam_t, fam_tree2, include.root=TRUE)
 pd_u3c_fam$pipeline <- "u3_c"
 
 family_pd <- bind_rows(pd_d2uc_fam, pd_u3uc_fam, pd_d2c_fam, pd_u3c_fam)
@@ -1778,11 +1779,13 @@ order_tree_pipe <- as.matrix(order_tree_pipe)
 
 
 #import taxonomies, set rownames, and make matrix
-order_taxonomies <- read.csv(here("data", "order_phylos.csv"))
+order_taxonomies <- read.csv(here("data", "taxonomic_data", "order_phylos.csv"))
 rownames(order_taxonomies) <- order_taxonomies$Order
 order_taxonomies <- as.matrix(order_taxonomies)
 
 #from phyloseq package
+#BiocManager::install("phyloseq", update = TRUE, ask = FALSE)
+library(phyloseq)
 order_ASV <- otu_table(order_tree_pipe, taxa_are_rows = TRUE)
 order_taxa <- tax_table(order_taxonomies)
 physeq_order <-  phyloseq(order_ASV, order_taxa, ord_tree2)
@@ -1823,7 +1826,7 @@ family_tree_pipe <- family_tree_pipe %>%
 family_tree_pipe <- as.matrix(family_tree_pipe)
 
 #import taxonomies, set rownames, and make matrix
-family_taxonomies <- read.csv(here("data", "family_phylos.csv"))
+family_taxonomies <- read.csv(here("data", "taxonomic_data", "family_phylos.csv"))
 rownames(family_taxonomies) <- family_taxonomies$Family
 family_taxonomies <- as.matrix(family_taxonomies)
 
@@ -1849,7 +1852,13 @@ control_count_plot
 
 It seems that, first of all, cleaning removes all ASVs for the controls, which we would expect, since we filtered these based on known prey and predator ASVs. Furthermore, it seems that DADA2 does a better job of assigning fewer ASVs to positive controls than UNOISE3. Furthermore, the negative control had zero reads assigned to any reads in DADA2, while UNOISE3 assigned one ASV a value of 1 read for the negative control. 
 
-**Winner: Either cleaned or DADA2 uncleaned**
+On the other hand, when we look at how many sequence reads each control received (indicative of the pipeline to match DNA to denoised clusters), it looks like UNOISE3 does a much better job on average of mapping more sequence reads to positive controls:
+
+```{r control ASV reads, echo=FALSE}
+pos_reads
+```
+
+**Winner: UNOISE uncleaned**
 
 ## b. Total ASVs (richness)
 
@@ -1925,13 +1934,13 @@ What we see is that cleaning does not significantly increase the number of ASVs 
 
 Not only might one pipeline be better at detecting total prey richness, but might also be able to cluster a broader phylogenetic diversity of prey items. This might be especially important in systems where predators are generalists and feed on organisms across broad taxonomic groups. Because the number of ASVs assigned to prey per sample is fairly low (less than 10 per sample) and because we are interested in just detection here and not necessarily abundance variations among samples, we will just qualitatively assess Faith's PD for each pipeline, summing the prey ASVs for each pipeline. Furthermore, we will combine phylogenetic analyses at the Order and Family level, since we have good taxonomic representation at these levels (15 orders, 19 families)
 
-```{r order level phylogenetic diversity, echo=FALSE}
+```{r order level phylogenetic diversity, echo=FALSE, eval=FALSE}
 plot_grid(order_pd_graph, order_phy_graph, align="h")
 ```
 
 UNOISE3 unclean picks up the greatest phylogenetic diversity. It is important to note that this is in spite of the fact that order richness is greater in the DADA2 dataset. UNOISE3 unclean has the lowest phylogenetic diversity, which is probably because we trained the cleaning program with DADA2 and some of the phylogenetic diversity of the UNOISE3 unclean dataset was removed. Based on the phylogenetic tree, DADA2 picked up Lepidoptera (moths and butterflies) and Sarcoptiformes (mites), while UNOISE3 picked up Squamata (geckos). 
 
-```{r family level phylogenetic diversity, echo=FALSE}
+```{r family level phylogenetic diversity, echo=FALSE, eval=FALSE}
 plot_grid(family_pd_graph, family_phy_graph, align ="h")
 ```
 
@@ -2049,19 +2058,19 @@ Compiling the results from this, we get a summary of all the measures of pipelin
 
 ```{r summary table of pipelines, echo=FALSE}
 row1 <- c("Measure/Pipeline", "DADA2 UC", "UNOISE3 UC", "DADA2 C", "UNOISE3 C")
-row2 <- c("Positive control ASVs", "X", "", "NS", "NS")
+row2 <- c("Positive control ASVs", "", "X", "", "")
 row3 <- c("Negative conotrol ASVs", "X", "", "NS", "NS")
 row4 <- c("Total ASVs", "X", "", "", "")
 row5 <- c("ASVs per sample", "", "X", "", "NS")
 row6 <- c("Prey ASVs", "", "X", "", "")
-row7 <- c("PD - Order", "", "X", "", "")
-row8 <- c("PD - Family", "", "X", "", "")
+#row7 <- c("PD - Order", "", "X", "", "")
+#row8 <- c("PD - Family", "", "X", "", "")
 row9 <- c("Prey reads", "", "X", "", "")
 row10 <- c("Prey ASV %", "", "", "X", "")
 row11 <- c("Prey read %", "", "", "TIE", "TIE")
 row12 <- c("Known Diet", "", "X", "", "NS")
 
-pipeline_table <- as.data.frame(rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12))
+pipeline_table <- as.data.frame(rbind(row1, row2, row3, row4, row5, row6, row9, row10, row11, row12))
 colnames(pipeline_table) <- pipeline_table$row1
 knitr::kable(pipeline_table[2:12, ], col.names = row1, row.names=FALSE)
 
