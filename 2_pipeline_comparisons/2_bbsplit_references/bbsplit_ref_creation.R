@@ -1,6 +1,8 @@
+######################
 #BBSplit Reference Creation####
 #February 3, 2020
 #Ana Miller-ter Kuile
+######################
 
 #This R code takes ASV output from dada2 on uncleaned sequences and creates reference
 #databases to use in BBSplit to remove predator sequences from prey sequences. The goal
@@ -14,14 +16,17 @@
 #added higher taxonomies to this file since MEGAN v6 only outputs the last of this path to
 #this file
 
+######################
 #Required packages####
+######################
 library(here)
 library(tidyverse)
 
-#Reference Creation####
+######################
+#Load and tidy data####
+######################
 #import dada2 ASVs
-setwd(here("3_bbsplit_references"))
-ASV_dada <- read_delim("dada2_uc_asvs.fasta", delim="\r", col_names = F)
+ASV_dada <- read_delim(here("2_pipeline_comparisons", "2_bbsplit_references", "dada2_uc_asvs.fasta"), delim="\r", col_names = F)
 
 #change formatting so that it is two columns - 1 with ASV, one with sequence
 ASV_dada <- lapply(ASV_dada[,1], function(x) {
@@ -33,12 +38,15 @@ ASV_dada <- lapply(ASV_dada[,1], function(x) {
 })[[1]]; colnames(ASV_dada) <- c('Label', 'Text')
 ASV_dada[,1] <- as.character(ASV_dada[,1]); ASV_dada[,2] <- as.character(ASV_dada[,2])
 
+######################
+#Load taxonomic assignments####
+######################
 #the file of IDs that match different taxonomies
 #I manually entered higher taxonomies in this file since MEGAN v6 only gives the 
 #last part of the taxon path now
-ASV_id_NCBI <- read_csv("dada2_uc_taxa_ncbi.csv") 
-ASV_id_BOLD <- read_csv("dada2_uc_taxa_bold.csv")
-ASV_id_BOLD <- dplyr::rename(ASV_id_BOLD, "ASV" = "Query ID")
+ASV_id_NCBI <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_unclean", "dada2_uc_ncbi_taxa.csv"))
+ASV_id_BOLD <- read.csv(here("3_taxonomic_assignment", "BOLD", "dada2_uc", "dada2_uc_taxa_bold.csv"))
+ASV_id_BOLD <- dplyr::rename(ASV_id_BOLD, "ASV" = "Query.ID")
 
 bold_id <- ASV_id_BOLD %>%
   dplyr::select(ASV, ID)
@@ -47,14 +55,16 @@ ncbi_id <- ASV_id_NCBI %>%
   dplyr::select(ASV, ID)
 
 id_both <- bold_id %>%  
-full_join(ncbi_id, by = "ASV")
+full_join(ncbi_id, by = "ASV") #combine assignments from MEGAN and BOLD
 
-
+######################
+#Sort predator from prey####
+######################
 #filters out just the predator ASVs from the ID file
 predator <- id_both %>%
   filter(ID.x == "Heteropoda venatoria" | ID.y == "Sparassidae") %>%
   select("ASV")
-str(predator)
+
 
 #you may need to change the ASV name to include a > here, I also added
 #it in text edit at some point, so two options here. 
@@ -78,9 +88,10 @@ predator_ASV <- ASV_dada %>%
 prey_ASV <- ASV_dada %>%
   semi_join(prey, by = c("Label" = "ASV"))
 
+######################
+#Write files to export and use in BBSPlit####
+######################
 #write predator and prey reference files
 write.table(prey_ASV, file = "prey_ref.fasta", row.names=F, quote=F, col.names=F)
 write.table(predator_ASV, file = "predator_ref.fasta", row.names=F, quote=F, col.names=F)
 
-
-#Combining BLAST and BOLD (this is currently with old BLAST) ####
