@@ -1,0 +1,327 @@
+---
+title: "Additional_models_supplement"
+author: "Ana Miller-ter Kuile"
+date: "6/26/2020"
+output:
+  html_document: 
+        theme: readable
+        df_print: paged
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(here) #tidy data
+library(tidyverse) #tidy data
+library(ggplot2) #visualize data
+library(effects) #dotplots and allEffects plots
+library(DHARMa) #model diagnostics
+library(MuMIn) #model diagnostics
+library(glmmTMB) #mixed models
+library(performance) #for binomial model fit binned residuals
+library(cowplot) #plot grid at end
+library(vegan) #adonis
+library(esc) #effect sizes
+```
+
+# Supplemental analyses {.tabset}
+
+## 1. DNA abundances
+
+```{r, include = FALSE}
+source(here("6_statistics", "2_abundance_analyses.R"), local = knitr::knit_global())
+```
+
+### A. Mesocosm all prey
+
+For mesocosm consumers, we also examined whether all prey DNA abundance was altered by surface sterilization as well as examined whether surface sterilization altered the amount of non-diet (here, including fungi and likely endoparasites) DNA. 
+
+The all prey model comparisons included a full model:
+**prey ~ Sterilized, offset = log(total), family = "genpois"**
+
+and a null model:
+**prey ~ 1, offset = log(total), family = "genpois"**
+
+Where **prey** was all prey DNA abundance (including offered prey item, *Oxya japonica*), **Sterilized** is a binary factor including either *surface sterilized* or *not surface sterilized*, and the data are transformed from raw abundances (with wide ranges) by correcting with an offset of the total DNA abundance in each sample. 
+
+```{r, include = FALSE}
+lab_all_mod <- glmmTMB(prey ~ Sterilized,
+                   data = lab_all_prey,
+                   offset = log(total),
+                   REML = FALSE,
+                   family = "genpois")
+
+lab_all_null <- glmmTMB(prey ~ 1,
+                    data = lab_all_prey,
+                    offset = log(total),
+                    REML = FALSE,
+                    family = "genpois")
+```
+
+```{r}
+AICc(lab_mod, lab_null)
+```
+
+```{r, include = FALSE}
+lab_all_mod <- glmmTMB(prey ~ Sterilized,
+                   data = lab_all_prey,
+                   offset = log(total),
+                   family = "genpois")
+
+lab_all_null <- glmmTMB(prey ~ 1,
+                    data = lab_all_prey,
+                    offset = log(total),
+                    family = "genpois")
+```
+
+
+```{r}
+summary(lab_all_mod)
+
+summary(lab_all_null)
+```
+
+```{r}
+plot(residuals(lab_all_null))
+simulationOutput <- simulateResiduals(fittedModel = lab_all_null) 
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput)
+```
+
+### B. Mesocosm non-diet
+
+We examined non-diet DNA abundance in mesocosm consumers with a full-null model comparison.
+
+The non-diet model comparisons included a full model:
+**nondiet ~ Sterilized, offset = log(total), family = "genpois"**
+
+and a null model:
+**nondiet ~ 1, offset = log(total), family = "genpois"**
+
+Where **nondiet** was all DNA abundance with taxonomic matches that were not diet items (here, fungi and likely endoparasites), 
+ **Sterilized** is a binary factor including either *surface sterilized* or *not surface sterilized*, and the data are transformed from raw abundances (with wide ranges) by correcting with an offset of the total DNA abundance in each sample. 
+
+```{r, include = FALSE}
+lab_nd_mod <- glmmTMB(nondiet ~ Sterilized,
+                       data = lab_all,
+                       offset = log(total),
+                       REML = FALSE,
+                       family = "genpois")
+
+lab_nd_null <- glmmTMB(nondiet ~ 1,
+                        data = lab_all,
+                        offset = log(total),
+                        REML = FALSE,
+                        family = "genpois")
+```
+
+```{r}
+AICc(lab_nd_mod, lab_nd_null)
+```
+
+```{r, include = FALSE}
+lab_nd_mod <- glmmTMB(nondiet ~ Sterilized,
+                      data = lab_all,
+                      offset = log(total),
+                      family = "genpois")
+
+lab_nd_null <- glmmTMB(nondiet ~ 1,
+                       data = lab_all,
+                       offset = log(total),
+                       family = "genpois")
+```
+
+```{r}
+summary(lab_nd_mod)
+summary(lab_nd_null)
+```
+
+
+```{r}
+plot(residuals(lab_nd_null))
+simulationOutput <- simulateResiduals(fittedModel = lab_nd_null) 
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput)
+```
+
+###C. Natural non-diet
+
+We examined non-diet DNA abundance in natural environment consumers with a full-null model comparison.
+
+The non-diet model comparisons included a full model:
+**nondiet ~ Sterilized, offset = log(total), family = "genpois"**
+
+and a null model:
+**nondiet ~ 1, offset = log(total), family = "genpois"**
+
+Where **nondiet** was all DNA abundance with taxonomic matches that were not diet items (here, fungi and likely endoparasites), 
+ **Sterilized** is a binary factor including either *surface sterilized* or *not surface sterilized*, and the data are transformed from raw abundances (with wide ranges) by correcting with an offset of the total DNA abundance in each sample.
+
+```{r, include = FALSE}
+fld_nd_mod <- glmmTMB(nondiet ~ Sterilized,
+                      data = fld_all,
+                      offset = log(total),
+                      REML = FALSE,
+                      family = "genpois")
+
+fld_nd_null <- glmmTMB(nondiet ~ 1,
+                       data = fld_all,
+                       offset = log(total),
+                       REML = FALSE,
+                       family = "genpois")
+```
+
+```{r}
+AICc(fld_nd_mod, fld_nd_null)
+```
+
+```{r, include = FALSE}
+fld_nd_mod <- glmmTMB(nondiet ~ Sterilized,
+                      data = fld_all,
+                      offset = log(total),
+                      family = "genpois")
+
+fld_nd_null <- glmmTMB(nondiet ~ 1,
+                       data = fld_all,
+                       offset = log(total),
+                       family = "genpois")
+```
+
+```{r}
+summary(fld_nd_mod)
+summary(fld_nd_null)
+```
+
+```{r}
+plot(residuals(fld_nd_null))
+simulationOutput <- simulateResiduals(fittedModel = fld_nd_null) 
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput)
+```
+
+### D. Summary
+
+```{r, echo = FALSE}
+plot_grid(lab_pred_graph, fld_pred_graph, lab_prey_graph, fld_prey_graph, 
+          lab_nd_graph, fld_nd_graph, ncol = 2, align = "vh")
+```
+
+## 2. Natural abundance-based diet composition
+
+```{r, include = FALSE}
+source(here("6_statistics", "3_field_richness_composition.R"), local = knitr::knit_global())
+```
+
+We also performed an abundance-based PERMANOVA with a GLMM to see if abundance-based composition was influenced by surface sterilization. Because abundance can be due to many factors not related to diet importance (e.g. time since consumption, prey biomass, primer bias, random amplification and sequencing processes), this is not our primary analysis, but shows similar results.
+
+Again, we ran a GLMM full model:
+
+**reads ~ Sterilized + (1+Sterilized|Family_ncbi), family = "genpois"**
+
+Where **reads** was the abundance of that diet item (again, concatenated at the family level taxonomic ID), **Sterilized** is a binary term of either *surface sterilized* or *not surface sterilized*. The random effects structure specifies that each family may have a distinct response to surface sterilization such that each family's response can vary in magnitude (random intercept term of Family_ncbi) and that surface sterilization can either lead to increases or decreases in that family's abundance (the random slope term of Sterilized). 
+
+and the null model:
+
+**reads ~ 1 + (1|Family_ncbi), family = "genpois"**
+
+```{r, include = FALSE}
+bray_mod <- glmmTMB(reads ~ Sterilized + (1+Sterilized|Family_ncbi), 
+                    data = comp,
+                    family = "genpois",
+                    REML = FALSE)
+
+bray_null <- glmmTMB(reads ~ 1 + (1|Family_ncbi), 
+                     data = comp,
+                     family = "genpois",
+                     REML = FALSE)
+```
+
+```{r}
+AICc(bray_mod, bray_null)
+```
+
+```{r, include = FALSE}
+bray_mod <- glmmTMB(reads ~ Sterilized + (1+Sterilized|Family_ncbi), 
+                    data = comp,
+                    family = "genpois")
+
+bray_null <- glmmTMB(reads ~ 1 + (1|Family_ncbi), 
+                     data = comp,
+                     family = "genpois")
+```
+
+```{r}
+summary(bray_null)
+summary(bray_mod) #sterilization term not significant
+```
+
+```{r}
+plot(residuals(bray_null))
+simulationOutput <- simulateResiduals(fittedModel = bray_null)
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput) 
+```
+
+## 3. Mesocosm all prey composition
+
+```{r, include = FALSE}
+source(here("6_statistics", "4_supp_lab_composition.R"), local = knitr::knit_global())
+```
+
+### A. Presence-based composition
+
+For these analyses, we only performed analyses with adonis() in vegan, with a basic format of 
+
+**comp_lab ~ Sterilized, data = meta_lab, dist = "jaccard", binary= TRUE**
+
+with **comp_lab** being a matrix of diet presence by individual for all mesocosm consumers, **Sterilized** being a binary term indicating whether consumers were *surface sterilized* or *not surface sterilized*. We used a Jaccard dissimilarity metric, since this is an appropriate metric for presence-absence data (with binary=TRUE). 
+
+```{r}
+adonis(comp_lab ~ Sterilized, data = meta_lab, dist = "jaccard", binary = TRUE)
+```
+
+### A. Abundance-based composition
+
+We ran a similar adonis() on abundance data, this time with:
+
+**abund_lab ~ Sterilized, data = meta_lab, dist = "bray"**
+
+Where **abund_lab** is now a matrix of prey DNA abundances by sample and our dissimilarity metric is now Bray-Curtis, which is appropriate for abundance data. 
+
+```{r}
+adonis(abund_lab ~ Sterilized, data = meta_lab, dist = "bray")
+```
+
+While this shows a marginally significant result, I'm not sure I trust this given that there are so few families in the mesocosm consumer diet contents:
+
+```{r}
+lab %>%
+  distinct(Family_ncbi) %>%
+  tally(name = "Number of Families")
+```
+
+And many of the families occur in one or a only a few individuals for the most part
+
+```{r}
+lab %>%
+  group_by(Family_ncbi) %>%
+  summarise(Frequency = sum(reads >0))
+```
+
+
+```{r, echo = FALSE, out.width = '100%'}
+heat_lab_graph 
+```
+
+
+
+
+
+

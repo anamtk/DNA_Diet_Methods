@@ -1,0 +1,382 @@
+---
+title: "Model_Supplement"
+author: "Ana Miller-ter Kuile"
+date: "6/26/2020"
+output:
+  html_document: 
+      theme: readable
+      df_print: paged
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+
+```{r, include = FALSE}
+library(here) #tidy data
+library(tidyverse) #tidy data
+library(ggplot2) #visualize data
+library(effects) #dotplots and allEffects plots
+library(DHARMa) #model diagnostics
+library(MuMIn) #model diagnostics
+library(glmmTMB) #mixed models
+library(performance) #for binomial model fit binned residuals
+library(cowplot) #plot grid at end
+library(vegan) #adonis
+library(esc) #effect sizes
+
+```
+
+# Diet Measure Models {.tabset}
+
+## 1. Prey Detection
+
+### A. Mesocosm
+
+```{r, include = FALSE}
+source(here("6_statistics", "1_prey_detection.R"), local = knitr::knit_global())
+```
+
+For mesocosm consumers, the full model is of the form:
+
+**presence ~ Sterilized, family = binomial**
+
+where **presence** is the binary 0-1 detection of the offered prey item (*Oxya japonica*) in the sample and **Sterilized** is a two-level factor of either *surface sterilized* or *not surface sterilized*.  
+
+and the null model is:
+
+**presence ~ 1, family = binomial**
+
+####Model comparison with AICc
+
+```{r}
+AICc(lab_detect_mod, lab_null_model)
+```
+
+#### Model summary
+
+p-value of the surface sterilization fixed effect as marginally significant:
+
+```{r}
+summary(lab_detect_mod)
+```
+
+#### Marginal means graph
+
+A marginal means graph shows a decreased in detection with surface steriliation: 
+
+```{r}
+plot(allEffects(lab_detect_mod))
+```
+
+#### Model diagnostics
+
+```{r}
+simulationOutput_lab <- simulateResiduals(fittedModel = lab_detect_mod) 
+fit_lab <- plot(simulationOutput_lab, asFactor=TRUE)
+binned_residuals(lab_detect_mod)
+```
+
+### B. Natural
+
+For natural consumers, the full model is of the form:
+
+**presence ~ Sterilized, family = binomial**
+
+where **presence** is the binary 0-1 detection of any potential prey in the sample and **Sterilized** is a two-level factor of either *surface sterilized* or *not surface sterilized*.  
+
+and the null model is:
+
+**presence ~ 1, family = binomial**
+
+#### Model comparison with AICc
+
+```{r}
+AICc(fld_detect_mod, fld_null_model)
+```
+
+#### Model summary
+
+The sterilized term is non-significant:
+
+```{r}
+summary(fld_detect_mod)
+summary(fld_null_model)
+```
+
+#### Model diagnostics
+
+```{r}
+simulationOutput_fld <- simulateResiduals(fittedModel = fld_null_model) 
+fit_fld <- plot(simulationOutput_fld, asFactor=TRUE)
+binned_residuals(fld_null_model)
+```
+
+### C. Summary
+
+```{r, echo = FALSE}
+plot_grid(a, c, nrow= 2, align = "hv")
+```
+
+## 2. Prey DNA Abundance
+
+```{r, include = FALSE}
+source(here("6_statistics", "2_abundance_analyses.R"), local = knitr::knit_global())
+```
+
+### A. Mesocosm
+
+For mesocosm consumers, the full model is of the form:
+
+**offered prey ~ Sterilized, offset = log(total), family = "genpois")**
+
+where **offered prey** is the abundance of DNA from the offered prey item (*Oxya japonica*) in the sample, **Sterilized** is a two-level factor of either *surface sterilized* or *not surface sterilized*, and the offset term of **total** offset transforms the abundance value by the total DNA read abundance in the sample, since there is a huge spread in the raw DNA abundances.  
+
+and the null model is:
+
+**offered prey ~ 1, offset = log(total), family = "genpois")**
+
+#### Model comparison with AICc
+
+```{r, include = FALSE}
+lab_mod <- glmmTMB(known ~ Sterilized,
+                   data = lab_all_nz,
+                   offset = log(total),
+                   REML = FALSE,
+                   family = "genpois")
+
+lab_null <- glmmTMB(known ~ 1,
+                   data = lab_all_nz,
+                   offset = log(total),
+                   REML = FALSE,
+                   family = "genpois")
+```
+
+```{r}
+AICc(lab_mod, lab_null)
+```
+
+#### Model summary
+
+```{r, include = FALSE}
+lab_mod <- glmmTMB(known ~ Sterilized,
+                   data = lab_all_nz,
+                   offset = log(total),
+                   family = "genpois")
+
+lab_null <- glmmTMB(known ~ 1,
+                    data = lab_all_nz,
+                    offset = log(total),
+                    family = "genpois")
+```
+
+```{r}
+summary(lab_mod)
+summary(lab_null)
+```
+
+#### Model diagnostics
+
+```{r}
+plot(residuals(lab_null))
+simulationOutput <- simulateResiduals(fittedModel = lab_null) 
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput)
+```
+
+### B. Natural
+
+For natural consumers, the full model is of the form:
+
+**prey ~ Sterilized, offset = log(total), family = "genpois")**
+
+where **prey** is the abundance of potential prey DNA in the sample, **Sterilized** is a two-level factor of either *surface sterilized* or *not surface sterilized*, and the offset term of **total** offset transforms the abundance value by the total DNA read abundance in the sample, since there is a huge spread in the raw DNA abundances.  
+
+and the null model is:
+
+**offered prey ~ 1, offset = log(total), family = "genpois")**
+
+#### Model comparison with AICc
+
+```{r, include = FALSE}
+fld_mod <- glmmTMB(prey ~ Sterilized,
+                   data = fld_all_nz,
+                   offset = log(total),
+                   REML = FALSE,
+                   family = "genpois")
+
+fld_null <- glmmTMB(prey ~ 1,
+                   data = fld_all_nz,
+                   offset = log(total),
+                   REML = FALSE,
+                   family = "genpois")
+```
+
+```{r}
+AIC(fld_mod, fld_null)
+```
+
+#### Model summary
+
+```{r, include = FALSE}
+fld_mod <- glmmTMB(prey ~ Sterilized,
+                   data = fld_all_nz,
+                   offset = log(total),
+                   family = "genpois")
+
+fld_null <- glmmTMB(prey ~ 1,
+                    data = fld_all_nz,
+                    offset = log(total),
+                    family = "genpois")
+```
+
+```{r}
+summary(fld_mod)
+summary(fld_null)
+```
+#### Model diagnostics
+
+```{r}
+plot(residuals(fld_null))
+simulationOutput <- simulateResiduals(fittedModel = fld_null) 
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput)
+```
+
+### C. Summary
+
+```{r, echo = FALSE}
+plot_grid(b_2, e_2, nrow = 2, align = "vh")
+```
+
+## 3. Natural: Prey DNA Richness and Composition
+
+```{r, include = FALSE}
+source(here("6_statistics", "3_field_richness_composition.R"), local = knitr::knit_global())
+```
+
+### A. Richness 
+
+We looked at richness of diet within each natural predator diet, with richness being the richness of family-level taxonomic assignments in each sample. The full model for richness is:
+
+**SR ~ Sterilized, family = poisson**
+
+where **SR** is taxonomic richness in a sample (concatenated at the family level) and **Sterilized** is a two-level factor of either *surface sterilized* or *not surface sterilized*.
+
+and the null model is:
+
+**SR ~ Sterilized, family = poisson**
+
+#### Model comparison with AICc
+
+```{r, include = FALSE}
+#create a model with and without surface sterilization effect, with poisson
+#distribution since these are species count data
+#set REML to false so that we can do AICc comparision
+rich_mod <- glmmTMB(SR ~ Sterilized,
+                    data = richness, 
+                    family = poisson,
+                    REML = FALSE)
+
+rich_null <- glmmTMB(SR ~ 1,
+                    data = richness, 
+                    family = poisson, 
+                    REML = FALSE)
+
+#compare them with AIC, showing that the null is a better fit
+```
+
+
+```{r}
+AICc(rich_mod, rich_null)
+```
+
+#### Model summary
+
+```{r, include = FALSE}
+#re-fit with REML
+rich_null <- glmmTMB(SR ~ 1,
+                     data = richness, 
+                     family = poisson)
+
+rich_mod <- glmmTMB(SR ~ Sterilized,
+                    data = richness, 
+                    family = poisson)
+```
+
+
+```{r}
+#based on this summary, surface sterilizatoin treatment is 
+#non-significant. 
+summary(rich_mod)
+summary(rich_null)
+```
+#### Model diagnostics 
+
+```{r}
+plot(residuals(rich_null))
+simulationOutput <- simulateResiduals(fittedModel = rich_null) 
+fit <- plot(simulationOutput, asFactor=TRUE)
+zi <- testZeroInflation(simulationOutput) 
+od <- testDispersion(simulationOutput) 
+```
+
+### B. Composition
+
+We looked at presence-absence taxonomic composition of prey DNA using a GLMM-based PERMANOVA approach. Specifically, this GLMM is run by saying, how does the fixed effect of sterilization impact presence, with a random effects structure with both a random interept term for Family_ncbi (let each family have a different intercept) and a random slopes term for surface sterilization treatment (let each family's relationship with with surface sterilization differ, ie let some families increase with surface sterilization, and others decrease)
+
+The full model looks like:
+
+**presence ~ Sterilized + (1+Sterilized|Family_ncbi), family = "binomial"**
+
+And the null looks like:
+
+**presence ~ 1 + (1|Family_ncbi), family = "binomial"**
+
+#### Model comparison with AICc
+
+```{r}
+AICc(comp_mod, comp_null)
+```
+
+#### Model summary
+
+```{r}
+summary(comp_null)
+summary(comp_mod) #sterilization term not significant
+```
+
+#### Model diagnostics 
+
+```{r}
+binned_residuals(comp_null)
+simulationOutput <- simulateResiduals(fittedModel = comp_null)
+fit <- plot(simulationOutput, asFactor=TRUE)
+```
+
+#### Supplementary: Compare to adonis()
+
+The results are similar with an adonis() call from vegan, with the structure:
+
+**comp1 ~ Sterilized, data = meta_field, dist = "jaccard", binary = TRUE**
+
+Where **comp1** is a matrix of interactions by individual, **Sterilized** is a binary fixed effect. We selected the Jaccard dissimilarlity index (indicating that data are presence-absence with binary=TRUE) since the Jaccard dissimilarity index is functionally Bray-Curtis dissimilarity, but better suited for presence-absence data
+
+```{r}
+adonis(comp1 ~ Sterilized, data = meta_field, dist = "jaccard", binary = TRUE)
+```
+
+### C. Summary
+
+```{r, echo = FALSE}
+rich_graph
+```
+
+```{r, out.width = "100%", echo = FALSE}
+heat_map_family
+```
+
