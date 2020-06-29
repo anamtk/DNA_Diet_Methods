@@ -3,10 +3,12 @@ title: "DNA Diet Methods Pipeline Comparison Supplement"
 author: "Ana Miller-ter Kuile"
 date: "5/15/2020"
 output:
+  word_document:
+    toc: no
   html_document:
     theme: readable
     code_folding: hide
-    toc: false
+    toc: no
     df_print: paged
 ---
 # DNA Diet Methods Pipeline Comparison Analyses

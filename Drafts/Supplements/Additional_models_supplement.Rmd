@@ -3,10 +3,10 @@ title: "Additional_models_supplement"
 author: "Ana Miller-ter Kuile"
 date: "6/26/2020"
 output:
+  word_document: default
   html_document: 
         theme: readable
         df_print: paged
-  word_document: default
 ---
 
 ```{r setup, include=FALSE}
