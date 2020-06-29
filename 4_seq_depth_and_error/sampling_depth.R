@@ -16,6 +16,7 @@ library(tidyverse)
 library(here)
 library(ggplot2)
 library(iNEXT)
+library(cowplot)
 
 #######################
 #Load and tidy data ####
@@ -60,3 +61,90 @@ u3_seq_depth_graph <- ggiNEXT(u3_seq_depth, type=1, facet.var="none", grey = T, 
         axis.title = element_text(size = 25))
 u3_seq_depth_graph
 
+#######################
+#Split field and lab####
+######################
+
+meta <- read.csv(here("data", "Sample_Metadata.csv"))
+
+lab <- meta %>%
+  filter(Source == "LAB") %>%
+  dplyr::select(sample) %>%
+  as_vector()
+
+field <- meta %>%
+  filter(Source == "FIELD") %>%
+  dplyr::select(sample) %>%
+  as_vector()
+
+comm_lab <- u3_comm_depth %>%
+  dplyr::select(all_of(lab))
+
+comm_field <- u3_comm_depth %>%
+  dplyr::select(all_of(field))
+
+#######################
+#Field iNEXT####
+######################
+
+#this determines sequencing depth across all samples
+field_depth <- iNEXT(comm_field, q=0, datatype="abundance") #this determines sequencing depth for each sample
+
+
+field_depth$DataInfo$SC #look at sampling completeness
+field_depth$DataInfo #gets per sample richness, etc
+#other parts of the iNEXT object that could be useful:
+
+#graph the interpolated and extrapolated sampling depth per sample
+df <- fortify(field_depth, type=1)
+head(df)
+
+df.point <- df[which(df$method=="observed"),]
+df.line <- df[which(df$method!="observed"),]
+df.line$method <- factor(df.line$method,
+                         c("interpolated", "extrapolated"),
+                         c("interpolation", "extrapolation"))
+
+fld_seq_depth <- ggplot(df, aes(x=x, y=y, colour=site)) +
+  geom_line(aes(linetype=method), lwd=1.5, data=df.line) +
+  theme_bw() +
+  labs(x="Sequencing Depth", y="ASV diversity") +
+  ylim(0, 35) +
+  geom_vline(xintercept = 16004, linetype = "dashed") +
+  theme(legend.position = "none",
+        text=element_text(size=18), axis.title.y = element_blank()) 
+
+#######################
+#Lab iNEXT####
+######################
+
+#this determines sequencing depth across all samples
+lab_depth <- iNEXT(comm_lab, q=0, datatype="abundance") #this determines sequencing depth for each sample
+
+
+lab_depth$DataInfo$SC #look at sampling completeness
+lab_depth$DataInfo #gets per sample richness, etc
+#other parts of the iNEXT object that could be useful:
+
+df <- fortify(lab_depth, type=1)
+head(df)
+
+df.point <- df[which(df$method=="observed"),]
+df.line <- df[which(df$method!="observed"),]
+df.line$method <- factor(df.line$method,
+                         c("interpolated", "extrapolated"),
+                         c("interpolation", "extrapolation"))
+
+lab_seq_depth <- ggplot(df, aes(x=x, y=y, colour=site)) +
+  geom_line(aes(linetype=method), lwd=1.5, data=df.line) +
+  theme_bw() +
+  ylim(0, 35) +
+  labs(x="Sequencing Depth", y="ASV diversity") +
+  geom_vline(xintercept = 55205, linetype = "dashed") +
+  theme(legend.position = "none",
+        text=element_text(size=18)) 
+
+#######################
+#paper output####
+######################
+plot_grid(lab_seq_depth, fld_seq_depth,  align = "vh")
