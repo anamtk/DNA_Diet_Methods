@@ -111,6 +111,15 @@ field_prey <- field_rare %>%
   summarise(reads = sum(reads)) %>% #summarise at family level
   left_join(metadata, by = "sample") #join to consumer metadata
 
+field_prey_ASVs <- field_rare %>% 
+  rename("ASV" = "X") %>%
+  left_join(taxonomies, by = "ASV") %>% #join by taxonomy
+  filter(taxonomy == "prey") %>%#filter out just the prey taxonomies
+  gather(sample, reads, HEV65:HEV100) %>% #make long
+  group_by(sample, ASV) %>% #group by sample and family
+  summarise(reads = sum(reads)) %>% #summarise at family level
+  left_join(metadata, by = "sample") #join to consumer metadata
+
 #Some of these have zero counts across all samples, so I'd like to delete
 #them for later. 
 
@@ -121,11 +130,26 @@ field_zeros <- field_prey %>%
   filter(reads == 0) %>% #find the ones that are equal to zero
   dplyr::select(Family_ncbi) #create a dataframe of just their names
 
+field_zeros_ASVs <- field_prey_ASVs %>%
+  ungroup() %>%
+  group_by(ASV) %>% #group by family
+  summarise(reads = sum(reads)) %>% #sum across all samples
+  filter(reads == 0) %>% #find the ones that are equal to zero
+  dplyr::select(ASV) #create a dataframe of just their names
+
 field_prey <- field_prey %>%
   anti_join(field_zeros, by = "Family_ncbi") #anti join to remove the IDs that are zero across all smaples
 
+field_prey_ASVs <- field_prey_ASVs %>%
+  anti_join(field_zeros_ASVs, by = "ASV")
 #export for analysis later
 write.csv(field_prey, here("data", "outputs", "rarefied_taxonomic_sort", "field_prey_rare.csv"))
+
+write.csv(field_prey_ASVs, 
+          here("data", 
+               "outputs", 
+               "rarefied_taxonomic_sort", 
+               "field_prey_ASVs_rare.csv"))
 
 ##########################
 # Field: Predator ####
