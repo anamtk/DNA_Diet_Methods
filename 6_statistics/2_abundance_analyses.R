@@ -24,7 +24,7 @@ library(MuMIn) #model diagnostics
 library(glmmTMB) #mixed models
 library(performance) #for binomial model fit binned residuals
 library(cowplot) #plot grid at end
-
+library(patchwork)
 ###########################
 # Load datasets ####
 ############################
@@ -234,37 +234,40 @@ od <- testDispersion(simulationOutput)
 #let's visualize this then
 my_y_title_2 <- expression(paste("Percent ", italic("O. japonica"), " reads per sample"))
 
-(b_1 <- ggplot(lab_all_nz, aes(x = Sterilized, y = (known/total)*100)) +
-  geom_boxplot(fill = "#7B8D65") +
-  theme_bw() + theme(legend.position = "none") +
-  labs(x = "Sterilization treatment", y = my_y_title_2) +
-  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized"))) 
-
 (b_2 <- ggplot(lab_all_nz, aes(x = Sterilized, y = (known/total)*100)) +
   geom_boxplot(fill = "#7B8D65") +
   scale_y_log10() +
-  theme_bw() + theme(legend.position = "none") +
-  labs(x = "Sterilization treatment", y = my_y_title_2) +
-  theme(axis.title.x = element_blank(), axis.text.x = element_blank()))
-
-(e_1 <- ggplot(fld_all_nz, aes(x = Sterilized, y = (prey/total)*100)) +
-  geom_boxplot(fill = "#F29979") +
-  labs(x = "Surface sterilization treatment", y = "Percent prey reads per sample") +
-  theme_bw() + theme(legend.position = "none") +
-  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")))
+  theme_bw() + 
+  labs(x = "Surface sterilization treatment", y = my_y_title_2) +
+  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", 
+                              "SS" = "Surface Sterilized")) +
+  theme(legend.position = "none", 
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12)))
 
 (e_2 <- ggplot(fld_all_nz, aes(x = Sterilized, y = (prey/total)*100)) +
   geom_boxplot(fill = "#F29979") +
   scale_y_log10()+
   labs(x = "Surface sterilization treatment", y = "Percent prey reads per sample") +
-  theme_bw() + theme(legend.position = "none") +
-  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")))
+  theme_bw() + 
+  scale_x_discrete(labels=c("NS" = "Not S. Sterilized", 
+                            "SS" = "Surface Sterilized")) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title.y = element_text(size = 15)))
 
 ###########################
 # Plot grid and summaries for paper ####
 ############################
 
 plot_grid(b_2, e_2, nrow = 2, align = "vh")
+
+abund_plot <- e_2 + b_2 +
+  plot_layout(nrow = 2) +
+  plot_annotation(tag_levels = c('a'), tag_suffix = ')') & 
+  theme(plot.tag = element_text(size = 20, vjust = 2))
 
 lab_all_nz %>%
   summarise(prop = known/total) %>%

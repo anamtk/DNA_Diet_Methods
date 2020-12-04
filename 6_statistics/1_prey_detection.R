@@ -29,12 +29,18 @@ library(cowplot) #plot grid at end
 
 #the lab dataframe is already in the format it needs to be for analysis, with
 #the addition of a presence-absence column
-lab_detect <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", "lab_known_prey_rare.csv"))
+lab_detect <- read.csv(here("data", 
+                            "outputs", 
+                            "rarefied_taxonomic_sort", 
+                            "lab_known_prey_rare.csv"))
 
 #this field dataframe is currently by-species (so it can be used in PERMANOVA later),
 #so we will need to summarise it a bit further to be able to do presence-absence analyses
 #of all prey
-field_detect <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", "field_prey_rare.csv"))
+field_detect <- read.csv(here("data", 
+                              "outputs", 
+                              "rarefied_taxonomic_sort", 
+                              "field_prey_rare.csv"))
 
 ###########################
 # Create presence-absence column in both DFs ####
@@ -58,7 +64,7 @@ lab_detect_mod <- glmmTMB(presence ~ Sterilized,
 lab_null_model <- glmmTMB(presence ~ 1,
                          data = lab_detect,
                          family = binomial)
-
+dredge(lab_detect_mod)
 AICc(lab_detect_mod, lab_null_model)
 
 #The sterilized term is marginally significant at p-value 0.07
@@ -106,10 +112,20 @@ ASVs_known <- lab_detect %>%
 
 my_y_title <- expression(paste(italic("O. japonica"), " ASV detection (%)"))
 
-(a <- ggplot(ASVs_known, aes(x = Sterilized, y = detection*100)) +
-    geom_bar(stat="identity", position= "dodge", fill = "#7B8D65", color = "black") +theme_bw() +
-    labs(y = my_y_title) +
-    theme(legend.position = "none", axis.title.x = element_blank(), axis.text.x = element_blank()))
+(a <- ggplot(ASVs_known, 
+             aes(x = Sterilized, y = detection*100)) +
+    geom_bar(stat="identity", 
+             position= "dodge", 
+             fill = "#7B8D65", 
+             color = "black") +
+    theme_bw() +
+    labs(x = "Surface sterilization treatment", 
+         y = my_y_title) +
+    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", 
+                              "SS" = "Surface Sterilized")) +
+    theme(legend.position = "none",
+          axis.text = element_text(size = 12),
+          axis.title = element_text(size = 15)))
 
 #Mesocosm summaries
 #by sterilization detection:
@@ -124,12 +140,24 @@ prey_presence <- field_detect %>%
   group_by(Sterilized) %>%
   summarise(total = n(), presence = sum(presence), detection = presence/total)
 
-(c <- ggplot(prey_presence, aes(x = Sterilized, y = detection*100)) +
-    geom_bar(stat="identity", position= "dodge", fill = "#F29979", color = "black") +theme_bw() +
-    labs(x = "Surface sterilization treatment", y = "Prey ASV detection (%)") +
-    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) +
-    theme(legend.position = "none"))
-
+(c <- ggplot(prey_presence, 
+             aes(x = Sterilized, 
+                 y = detection*100)) +
+    geom_bar(stat="identity", 
+             position= "dodge", 
+             fill = "#F29979", 
+             color = "black") +
+    theme_bw() +
+    labs(x = "Surface sterilization treatment", 
+         y = "Prey ASV detection (%)") +
+    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", 
+                              "SS" = "Surface Sterilized")) +
+    theme(legend.position = "none",
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_text(size = 12),
+          axis.title.y = element_text(size = 15)))
+  
 #Field summaries
 #by sterilization
 prey_presence
@@ -142,6 +170,14 @@ field_detect %>%
 ###########################
 # Plot to export ####
 ############################
-
+library(patchwork)
 plot_grid(a, c, nrow= 2, align = "hv")
-  
+
+plot_grid(c, a, nrow=2, align = "hv")  
+
+detect_plot <- c + a +
+  plot_layout(nrow = 2) +
+  plot_annotation(tag_levels = c('a'), tag_suffix = ')') & 
+  theme(plot.tag = element_text(size = 20, vjust = 2))
+
+#exported at 6x6 inches
