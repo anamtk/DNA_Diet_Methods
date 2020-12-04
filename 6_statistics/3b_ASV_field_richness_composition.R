@@ -47,6 +47,11 @@ richness <- ASV %>%
   group_by(sample, Sterilized) %>%
   summarise(SR = sum(reads > 0, na.rm=TRUE)) #number of ASVs with greater than 0 reads
 
+richness %>%
+  ungroup() %>%
+  summarise(rich = mean(SR),
+            max = max(SR),
+            se = sd(SR)/sqrt(n()))
 #create a model with and without surface sterilization effect, with poisson
 #distribution since these are species count data
 #set REML to false so that we can do AICc comparision
