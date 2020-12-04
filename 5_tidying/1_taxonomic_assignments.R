@@ -4,9 +4,12 @@
 # May 27, 2020
 ########################
 
-# This code takes our matrix of samples and read abundances, assigns taxonomies to each of the 
-#ASVs (splitting into pred-potential prey-other IDs) so that we can subset them at the end 
-#to just do analyses on some sets of this data (namely, potential prey items, but perhaps predator
+# This code takes our matrix of samples and read
+#abundances, assigns taxonomies to each of the 
+#ASVs (splitting into pred-potential prey-other IDs) 
+#so that we can subset them at the end 
+#to just do analyses on some sets of this data 
+#(namely, potential prey items, but perhaps predator
 #as well)
 
 ##########################
@@ -19,18 +22,27 @@ library(tidyverse) #tidy data
 # Import Community Data and taxonomies from BOLD and NCBI
 ###########################
 
-comm <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = '\t')
+comm <- read.csv(here("data", 
+                      "denoised_data", 
+                      "ASV_tables", 
+                      "unoise_uc_zotu_tab.txt"), 
+                 sep = '\t')
 #rename X to ASV in all these tables.
 comm <- rename(comm, "ASV" = "X.OTU.ID")
 
 #rename all the sample names across dataframes for consistency
-colnames(comm) <- sapply(str_split(colnames(comm), "S"), function(x){return(x[[1]])})
+colnames(comm) <- sapply(str_split(colnames(comm), "S"), 
+                         function(x){return(x[[1]])})
 comm <- rename(comm, "ASV" = "A")
 
 #import both NCBI and BOLD taxonomies
-ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "unoise_unclean",
+ncbi <- read.csv(here("3_taxonomic_assignment", 
+                      "MEGAN", 
+                      "unoise_unclean",
                          "unoise_uc_ncbi_taxa.csv"))
-bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "usearch_uc", 
+bold <- read.csv(here("3_taxonomic_assignment", 
+                      "BOLD", 
+                      "usearch_uc", 
                          "unoise_uc_bold_taxa.csv"))
 bold <- rename(bold, "ASV" = "Query.ID")
 
@@ -46,10 +58,13 @@ bold <- rename(bold, "ASV" = "Query.ID")
 
 #sort into categories for bold:
 bold$taxonomy <- ifelse(
-  bold$ID == "Heteropoda venatoria", "predator",
-  ifelse(bold$Kingdom == "Fungi" | bold$Class == "Mammalia", "non-diet", 
+  bold$ID == "Heteropoda venatoria", 
+  "predator",
+  ifelse(bold$Kingdom == "Fungi" | bold$Class == "Mammalia", 
+         "non-diet", 
          ifelse(bold$Phylum == "Arthropoda" | bold$Class == "Reptilia" & bold$ID != "Heteropoda venatoria", 
-                "prey", "non-diet"
+                "prey", 
+                "non-diet"
          )))
 
 #sort into categories for ncbi:
@@ -112,6 +127,10 @@ taxonomies %>%
   tally()
 
 taxonomies %>%
+  group_by(taxonomy) %>%
+  summarise(percent = n()/176)
+
+taxonomies %>%
   tally()
 
 taxonomies %>%
@@ -126,5 +145,3 @@ taxonomies %>%
   filter(Level_bold == "Species" & Level_ncbi == "Species") %>%
   tally() #12
 
-22+1+12
-35/41

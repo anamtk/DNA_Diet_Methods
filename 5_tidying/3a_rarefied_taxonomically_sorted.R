@@ -25,16 +25,26 @@ library(tidyverse) #tidy data
 ##########################
 
 #the lab rarefied dataframe from the divide_rarefy.R script
-lab_rare <- read.csv(here("data", "outputs", "divide_rarefy", "lab_comm_rare.csv"))
+lab_rare <- read.csv(here("data", 
+                          "outputs", 
+                          "divide_rarefy", 
+                          "lab_comm_rare.csv"))
 
 #the field rarefied dataframe from the divide_rarefy.R script
-field_rare <- read.csv(here("data", "outputs", "divide_rarefy", "field_comm_rare.csv"))
+field_rare <- read.csv(here("data", 
+                            "outputs", 
+                            "divide_rarefy", 
+                            "field_comm_rare.csv"))
 
 #sample metadata
-metadata <- read.csv(here("data", "Sample_Metadata.csv"))
+metadata <- read.csv(here("data", 
+                          "Sample_Metadata.csv"))
 
 #taxonomies dataframe from taxonomic_assignments.R
-taxonomies <- read.csv(here("data", "outputs", "taxonomic_assignments", "taxonomic_assignments.csv"))
+taxonomies <- read.csv(here("data", 
+                            "outputs", 
+                            "taxonomic_assignments", 
+                            "taxonomic_assignments.csv"))
 
 ##########################
 # Mesocosms: Known Prey ####

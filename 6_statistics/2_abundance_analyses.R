@@ -34,28 +34,36 @@ library(cowplot) #plot grid at end
 #of each type, removing any samples with zero values? I guess? maybe not at 
 #first, i'll have to think about it.
 
-lab_prey <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+lab_prey <- read.csv(here("data", 
+                          "outputs", 
+                          "rarefied_taxonomic_sort", 
                           "lab_known_prey_rare.csv"))
 
 lab_prey <- lab_prey %>%
   group_by(sample, Sterilized) %>%
   summarise(known = sum(reads))
 
-lab_all_prey <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+lab_all_prey <- read.csv(here("data", 
+                              "outputs", 
+                              "rarefied_taxonomic_sort", 
                           "lab_all_prey_rare.csv"))
 
 lab_all_prey <- lab_all_prey %>%
   group_by(sample, Sterilized) %>%
   summarise(prey = sum(reads))
 
-lab_pred <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+lab_pred <- read.csv(here("data", 
+                          "outputs", 
+                          "rarefied_taxonomic_sort", 
                               "lab_predator_rare.csv"))
 
 lab_pred <- lab_pred %>%
   group_by(sample, Sterilized) %>%
   summarise(pred = sum(reads))
 
-lab_nondiet <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+lab_nondiet <- read.csv(here("data", 
+                             "outputs", 
+                             "rarefied_taxonomic_sort", 
                              "lab_nondiet_rare.csv"))
 
 lab_nondiet <- lab_nondiet %>%
@@ -68,21 +76,27 @@ lab_all <- lab_prey %>%
   left_join(lab_nondiet, by = c("sample", "Sterilized")) %>%
   mutate(total = 55205) 
 
-fld_prey <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+fld_prey <- read.csv(here("data", 
+                          "outputs", 
+                          "rarefied_taxonomic_sort", 
                           "field_prey_rare.csv"))
 
 fld_prey <- fld_prey %>%
   group_by(sample, Sterilized) %>%
   summarise(prey = sum(reads))
 
-fld_pred <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+fld_pred <- read.csv(here("data", 
+                          "outputs", 
+                          "rarefied_taxonomic_sort", 
                           "field_predator_rare.csv"))
 
 fld_pred <- fld_pred %>%
   group_by(sample, Sterilized) %>%
   summarise(pred = sum(reads))
 
-fld_nondiet <- read.csv(here("data", "outputs", "rarefied_taxonomic_sort", 
+fld_nondiet <- read.csv(here("data", 
+                             "outputs", 
+                             "rarefied_taxonomic_sort", 
                              "field_nondiet_rare.csv"))
 
 fld_nondiet <- fld_nondiet %>%
@@ -93,6 +107,22 @@ fld_all <- fld_prey %>%
   left_join(fld_pred, by = c("sample", "Sterilized")) %>%
   left_join(fld_nondiet, by = c("sample", "Sterilized")) %>%
   mutate(total = 16004)
+
+
+# Read totals summaries ---------------------------------------------------
+
+lab_all %>%
+  dplyr::select(-known) %>%
+  full_join(fld_all) %>% 
+  summarise(prey_prop = prey/total,
+            pred_prop = pred/total,
+            non_prop = nondiet/total) %>% 
+  summarise(mean_prey = mean(prey_prop),
+            se_prey = sd(prey_prop)/sqrt(n()),
+            mean_pred = mean(pred_prop),
+            se_pred = sd(pred_prop)/sqrt(n()),
+            mean_non = mean(non_prop),
+            se_non = sd(non_prop)/sqrt(n()))
 
 ###########################
 # Lab model ####
