@@ -21,7 +21,7 @@ package.list <- c("here", "tidyverse",
                   "DHARMa", "performance",
                   "vegan", "remotes",
                   "eulerr", "dummies",
-                  "esc")
+                  "esc", "patchwork")
 
 ## Installing them if they aren't already on the computer
 new.packages <- package.list[!(package.list %in% installed.packages()[,"Package"])]
@@ -96,9 +96,12 @@ od <- testDispersion(simulationOutput)
 ############################
 (rich_graph <- ggplot(richness, aes(x = Sterilized, y = SR)) +
    geom_boxplot(fill = "#F29979") + theme_bw() +
+   ylim(0,7) +
    labs(x = "Surface sterilization treatment", y = "Prey family richness") +
    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) +
-   theme(legend.position = "none"))
+   theme(legend.position = "none",
+         axis.text = element_text(size = 12),
+         axis.title = element_text(size = 15)))
 
 richness %>%
   ungroup() %>%
@@ -160,12 +163,23 @@ testDispersion(simulationOutput)
 ############################
 (ASV_rich_graph <- ggplot(richness_ASV, aes(x = Sterilized, y = SR)) +
    geom_boxplot(fill = "#F29979") + theme_bw() +
-   labs(x = "Surface sterilization treatment", y = "ASV richness") +
+   labs(x = "Surface sterilization treatment", y = "Prey ASV richness") +
    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) +
-   theme(legend.position = "none"))
+   theme(legend.position = "none",
+         axis.text = element_text(size = 12),
+         axis.title = element_text(size = 15)))
 
 richness_ASV %>%
   ungroup() %>%
   summarise(mean= mean(SR), total = n(), sd = sd(SR), se = sd/sqrt(total))
 max(richness_ASV$SR)
 min(richness_ASV$SR)
+
+# Plot Grid ---------------------------------------------------------------
+
+rich_plot <- rich_graph + ASV_rich_graph +
+  plot_layout(nrow = 1) +
+  plot_annotation(tag_levels = c('a'), tag_suffix = ')') & 
+  theme(plot.tag = element_text(size = 20, vjust = 2))
+
+rich_plot

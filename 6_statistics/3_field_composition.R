@@ -88,6 +88,8 @@ fit <- plot(simulationOutput, asFactor=TRUE)
 #(At family level)
 ############################
 #make order and ID values characters for ifelse sorting to order level below
+heat <- field
+
 heat$Family_ncbi <- as.character(heat$Family_ncbi)
 
 #ifelse statements creating an overall "Order" column for visualization
@@ -149,7 +151,7 @@ pal2 <- c(
     geom_tile() + 
     coord_equal() +
     labs(x = "Surface sterilization treatment", y = "Diet family") +
-    scale_x_discrete(labels=c("NS" = "Not Sterilized", "SS" = "Surface Sterilized")) +
+    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) +
     scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
                       values = pal2,
                       limits = names(pal2),
@@ -158,7 +160,8 @@ pal2 <- c(
     theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
 ##0.05263158   0.37353801   1.32602339   6.77631579 220.05263158 
-
+factor_levels <- heat_family %>%
+  pull(Family)
 
 ###########################
 # Field presence-absence composition analysis CCA ####
@@ -236,80 +239,85 @@ adonis(mat_pres ~ Sterilized, data = meta, dist = "jaccard", binary = TRUE)
 # Heat Map of ASVs ----------------------------------------------------------------
 heat <- ASV
 
-heat_nz <- heat %>%
-  filter(reads > 0)
-quantile(heat_nz$reads)
-#1    1    5   20.5 4079  
+taxa <- read.csv(here("data",
+                      "outputs",
+                      "taxonomic_assignments",
+                      "taxonomic_assignments.csv"))
+
+taxa <- taxa %>%
+  dplyr::select(ASV, Family_ncbi) %>%
+  filter(Family_ncbi != "")
+
+heat <- heat %>% 
+  left_join(taxa, by = "ASV") %>%
+  unite("Family_ID", c(ASV, Family_ncbi), sep = " (", remove = F) %>%
+  mutate(Family_ID = paste0(Family_ID, ")"))
 
 #now we can summarise heat by order and sterilization treatment for
 #the heatmap graph
-ASV_ord <- heat %>%
-  group_by(ASV) %>%
-  summarise(reads = sum(reads)) %>%
-  arrange(reads) %>%
-  mutate(ASV = factor(ASV, levels = ASV)) %>%
-  dplyr::select(ASV) %>%
-  as_vector
+heat_ASV <- heat %>%
+  group_by(ASV, Family_ncbi, Family_ID, Sterilized) %>% #group by order and sterilization treatment
+  summarise(reads = mean(reads)) %>% #then find the mean abundance for each order
+  ungroup() %>% #ungroup so we can make order a factor
+  mutate(ASV = as.factor(ASV)) %>% #make order a factor
+  pivot_wider(names_from = Sterilized, values_from = reads) %>% #make wide for two columns
+  #for sterilization treatment so we can arrange in descending order of abundance
+  arrange((NS + SS), (NS)) %>% #arrange in descending order of abundance
+  mutate(ASV = factor(ASV, levels = ASV)) %>% #reset the levels of order on this
+  #new abundance-based ordering of the Order factor
+  gather(Sterilized, reads, NS:SS) #gather DF back up for visualization
+
+#Because read abundance has such a broad range, we want to set a quantile-based
+#variable for these abundances for the color ramp in the graph, but also want
+#to discount the effects of zero reads in this, so we will create a DF of non-zero
+#values for reads, and then find quantiles of this to inform our quantiles for the figure
+heat_ASV_nz <- heat_ASV %>%
+  filter(reads > 0)
+quantile(heat_ASV_nz$reads)
+#0.05882353   0.18750000   0.64705882   6.02941176 245.94117647
 
 #now we can set a quantile variable in our DF
-ASV %>%
-  dplyr::select(sample, Sterilized) %>%
-  unique()
-
-heat$sample <- factor(heat$sample, levels = c("HEV100", "HEV106", "HEV107", "HEV108",
-                                              "HEV109", "HEV110", "HEV111", "HEV79",
-                                              "HEV81", "HEV82", "HEV83", "HEV87",
-                                              "HEV88", "HEV89", "HEV95", "HEV96", 
-                                              "HEV97", "HEV98", "HEV99", "HEV101",
-                                              "HEV102", "HEV103", "HEV104", "HEV105",
-                                              "HEV65", "HEV66", "HEV67", "HEV68", "HEV70",
-                                              "HEV71", "HEV74", "HEV76", "HEV90", 
-                                              "HEV91", "HEV92", "HEV93", "HEV94"))
-heat$quantiles <- ifelse(heat$reads == 0, 0,
-                         ifelse(heat$reads > 0 & heat$reads <= 1, 1, 
-                                ifelse(heat$reads > 1 & heat$reads <= 5, 3,
-                                       ifelse(heat$reads > 6 & heat$reads <= 20.5, 4, 5))))
+heat_ASV$quantiles <- ifelse(heat_ASV$reads == 0, 0,
+                                ifelse(heat_ASV$reads > 0 & heat_ASV$reads <= 0.05882353, 1, 
+                                       ifelse(heat_ASV$reads > 0.05882353 & heat_ASV$reads <= 0.18750000, 2,
+                                              ifelse(heat_ASV$reads > 0.18750000 & heat_ASV$reads <= 0.64705882, 3,
+                                                     ifelse(heat_ASV$reads > 0.64705882 & heat_ASV$reads <= 6.02941176, 4, 5)))))
 
 #making it a factor for visualization
-heat$quantiles <- as.factor(heat$quantiles) 
+heat_ASV$quantiles <- as.factor(heat_ASV$quantiles)  
 
 #these are two color palettes that could be used in this figure
-pal3 <- c(
+pal <- c(
   '0' = "#FFFFFF",
   '1' = "#F27D72", 
-  '3' = "#D26F67", 
-  '4' = "#B2615C",
-  '5' = "#925451"
+  '2' = "#D26F67", 
+  '3' = "#B2615C",
+  '4' = "#925451",
+  '5' = "#734646"
 )
 
-heat <- heat %>%
-  mutate(ASV = as.factor(ASV)) %>%
-  mutate(ASV = factor(ASV, levels = ASV_ord))
+pal2 <- c(
+  '0' = "#FFFFFF",
+  '1' = "#F29979", 
+  '2' = "#D2846C", 
+  '3' = "#B26F5F",
+  '4' = "#925B53",
+  '5' = "#734646"
+)
 
-(heat_map <- ggplot(heat, aes(x = sample, y = ASV, fill=quantiles)) +
-    geom_tile(color = "black") + 
+(heat_map_ASV <- ggplot(heat_ASV, aes(x = Sterilized, y = ASV, fill=quantiles, height = 0.95, width = 0.95)) +
+    geom_tile() + 
     coord_equal() +
-    labs(x = "Sample", y = "ASV") +
+    labs(x = "Surface sterilization treatment", y = "Diet ASV") +
+    scale_x_discrete(labels=c("NS" = "Not S. Sterilized", "SS" = "Surface Sterilized")) +
     scale_fill_manual(name = "Mean read abundance\n(divided by quantiles)",
-                      values = pal3,
-                      limits = names(pal3),
-                      labels = c("0", "< 1", "< 5", "< 20", "> 20")) + 
+                      values = pal2,
+                      limits = names(pal2),
+                      labels = c("0", "< 0.05", "< 0.19", "< 0.65", "< 6.03", "> 6.03")) + 
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    geom_vline(xintercept = 17.5))
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 
-
-
-
-# For paper - plots -------------------------------------------------------
-
-
-
-
-
-
-
-
+#0.05882353   0.18750000   0.64705882   6.02941176 245.94117647
 
 ###########################
 # Per-sample heat map as an alternative to effects map? ####
