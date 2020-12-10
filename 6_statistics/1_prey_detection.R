@@ -79,6 +79,7 @@ binned_residuals(lab_detect_mod)
 #potential prey item
 plot(allEffects(lab_detect_mod))
 
+
 ###########################
 # Field prey detection ####
 ############################           
