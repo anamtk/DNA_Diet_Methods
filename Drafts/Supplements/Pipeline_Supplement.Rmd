@@ -52,7 +52,12 @@ knitr::include_graphics(here("Pictures", "experiment_setup.png"))
 We ran all samples on an Illumina MiSeq platform at the UCSB Genetics Core. We cleaned low-quality sequences from this set of ~15 million sequences returned from the genetics core, and then used two clustering pipelines (DADA2 and UNOISE3) that use sequence abundance and quality to combine similar sequences (which are often different because of errors in amplification or sequencing and actually represent the same sequence) into clusters representing the most common real sequence. We performed each of these clustering pipelines twice: once on the complete list of sequences, and once on a set of sequences that had been "cleaned" of predator and non-diet sequences using the program BBSplit. After the denoising/clustering process, we are left with a matrix very similar to any community matrix, with columns corresponding to each sample (spider individual) and rows corresponding to ASVs (sequences) in that individual. In this way, each spider becomes functionally a "community" of species which can be treated very similarly to any other matrix of community data (i.e. in vegan with multidimensional analyses, etc). 
 
 ```{r an example matrix, echo=FALSE}
-matrix_example <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_uc_asv_tab.tsv"), sep= "\t")
+matrix_example <- read.csv(here("data", 
+                                "data_raw",
+                                "1_denoised_data", 
+                                "ASV_tables",
+                                "dada2_uc_asv_tab.tsv"), sep= "\t")
+
 matrix_example_small <- matrix_example[1:10,]
 matrix_example_smaller <- matrix_example_small[c(1, 4:9)]
 head(matrix_example_smaller, n=10)
@@ -133,17 +138,59 @@ library(phytools)
 #library(phyloseq)
 
 #import metadata
-metadata <- read.csv(here("data", "Sample_Metadata.csv"))
+metadata <- read.csv(here("data", 
+                          "data_raw",
+                          "2_sample_data",
+                          "Sample_Metadata.csv"))
 
 #Import ASV tables####
-d2_uc <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_uc_asv_tab.tsv"), sep = "\t")
-d2_c <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_c_prey_asv_tab.tsv"), sep = '\t')
-d2_um <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_c_um_asv_tab.tsv"), sep = '\t')
-d2_pred <- read.csv(here("data", "denoised_data", "ASV_tables", "dada2_c_pred_asv_tab.tsv"), sep = '\t')
-u3_uc <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_uc_zotu_tab.txt"), sep = '\t')
-u3_c <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_c_prey_zotu_tab.txt"), sep = '\t')
-u3_um <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_c_um_zotu_tab.txt"), sep = '\t')
-u3_pred <- read.csv(here("data", "denoised_data", "ASV_tables", "unoise_c_pred_zotu_tab.txt"), sep = '\t')
+d2_uc <- read.csv(here("data",
+                       "data_raw",
+                       "1_denoised_data", 
+                       "ASV_tables", 
+                       "dada2_uc_asv_tab.tsv"), sep = "\t")
+
+d2_c <- read.csv(here("data",
+                       "data_raw",
+                       "1_denoised_data", 
+                       "ASV_tables", 
+                       "dada2_c_prey_asv_tab.tsv"), sep = '\t')
+
+d2_um <- read.csv(here("data",
+                       "data_raw",
+                       "1_denoised_data", 
+                       "ASV_tables", 
+                       "dada2_c_um_asv_tab.tsv"), sep = '\t')
+
+d2_pred <- read.csv(here("data",
+                       "data_raw",
+                       "1_denoised_data", 
+                       "ASV_tables", 
+                       "dada2_c_pred_asv_tab.tsv"), sep = '\t')
+
+u3_uc <- read.csv(here("data",
+                       "data_raw",
+                       "1_denoised_data", 
+                       "ASV_tables", 
+                       "unoise_uc_zotu_tab.txt"), sep = '\t')
+
+u3_c <- read.csv(here("data",
+                       "data_raw",
+                       "1_denoised_data", 
+                      "ASV_tables", 
+                      "unoise_c_prey_zotu_tab.txt"), sep = '\t')
+
+u3_um <- read.csv(here("data",
+                       "data_raw",
+                       "1_denoised_data", 
+                       "ASV_tables", 
+                       "unoise_c_um_zotu_tab.txt"), sep = '\t')
+
+u3_pred <- read.csv(here("data",
+                       "data_raw",
+                       "1_denoised_data", 
+                       "ASV_tables", 
+                       "unoise_c_pred_zotu_tab.txt"), sep = '\t')
 
 #rename X to ASV in all these tables.
 d2_uc <- rename(d2_uc, "ASV" = "X")
@@ -282,7 +329,10 @@ u3_pos_ct <- u3_uc %>%
 ############################
 #also, in justifying UNOISE, want to check that the positives got more reads
 #NOTE: PUT THIS IN THE PIPELINE COMPARISON SCRIPT!!!!####
-d2 <- read.csv(here("data", "denoised_data", "ASV_tables", 
+d2 <- read.csv(here("data",
+                    "data_raw",
+                    "1_denoised_data",  
+                    "ASV_tables", 
                     "dada2_uc_asv_tab.tsv"), sep = "\t") 
 
 colnames(d2) <- sapply(str_split(colnames(d2), "_"), function(x){return(x[[1]])})
@@ -442,13 +492,27 @@ nrow(u3_c) + nrow(u3_um) + nrow(u3_pred) #196
 #matrix for each pipeline (clean and unclean) to their taxonomic categories
 #DADA2 UNCLEAN#
 #import both NCBI and BOLD taxonomies
-d2_uc_ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_unclean",
+d2_uc_ncbi <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                            "MEGAN", 
+                            "dada2_unclean",
                             "dada2_uc_ncbi_taxa.csv"))
 #this is everything that got a taxonomic assignment through MEGAN
-d2_uc_all <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_unclean",
+d2_uc_all <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies", 
+                           "MEGAN", 
+                           "dada2_unclean",
                            "dada2_uc_all.csv"))
-d2_uc_bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "dada2_uc", 
+
+d2_uc_bold <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                            "BOLD", 
+                            "dada2_uc", 
                             "dada2_uc_taxa_bold.csv"))
+
 d2_uc_bold <- rename(d2_uc_bold, "ASV" = "Query.ID")
 
 #Sort by "predator", "prey", and "non-diet" before merging into one 
@@ -515,17 +579,36 @@ d2_uc_id_tab$taxonomy <- replace_na(d2_uc_id_tab$taxonomy, "no hit")
 #write the taxonomies to a file for use in the community dissimilarity scripts script
 d2_uc_taxonomies <- d2_uc_id_tab %>%
   dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, ID_nondiet, Order_nondiet, taxonomy)
-write.csv(d2_uc_taxonomies, here("data", "d2_uc_tax_ass.csv"))
+write.csv(d2_uc_taxonomies, here("data", 
+                                 "outputs",
+                                 "taxonomic_data",
+                                 "d2_uc_tax_ass.csv"))
 
 #DADA2 CLEAN##
 #import both NCBI and BOLD taxonomies
-d2_c_ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_clean",
-                           "prey", "dada2_c_prey_ncbi_taxa.csv"))
+d2_c_ncbi <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                           "MEGAN", 
+                           "dada2_clean",
+                           "prey", 
+                           "dada2_c_prey_ncbi_taxa.csv"))
 #this is everything that got a taxonomic assignment through MEGAN
-d2_c_all <- read.csv(here("3_taxonomic_assignment", "MEGAN", "dada2_clean",
-                           "prey", "dada2_c_prey_ALL.csv"))
-d2_c_bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "dada2_c", 
-                            "prey", "dada2_c_prey_taxa_bold.csv"))
+d2_c_all <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                          "MEGAN", 
+                          "dada2_clean",
+                           "prey", 
+                          "dada2_c_prey_ALL.csv"))
+
+d2_c_bold <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                           "BOLD", 
+                           "dada2_c", 
+                            "prey", 
+                           "dada2_c_prey_taxa_bold.csv"))
 
 #Sort by "predator", "prey", and "non-diet" before merging into one 
 #dataframe for assigning to the abundance table!
@@ -590,13 +673,24 @@ d2_c_id_tab$taxonomy <- replace_na(d2_c_id_tab$taxonomy, "no hit")
 #write the taxonomies to a file for use in the community dissimilarity scripts script
 d2_c_taxonomies <- d2_c_id_tab %>%
   dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, ID_nondiet, taxonomy)
-write.csv(d2_c_taxonomies, here("data", "d2_c_tax_ass.csv"))
+write.csv(d2_c_taxonomies, here("data", 
+                                 "outputs",
+                                 "taxonomic_data",
+                                "d2_c_tax_ass.csv"))
 
 #UNOISE UNCLEAN##
 #import both NCBI and BOLD taxonomies
-u3_uc_ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "unoise_unclean",
+u3_uc_ncbi <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                            "MEGAN", 
+                            "unoise_unclean",
                            "unoise_uc_ncbi_taxa.csv"))
-u3_uc_bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "usearch_uc", 
+u3_uc_bold <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                            "BOLD", 
+                            "usearch_uc", 
                            "unoise_uc_bold_taxa.csv"))
 u3_uc_bold <- rename(u3_uc_bold, "ASV" = "Query.ID")
 
@@ -652,13 +746,26 @@ u3_uc_id_tab$taxonomy <- replace_na(u3_uc_id_tab$taxonomy, "no hit")
 #write the taxonomies to a file for use in the community dissimilarity scripts script
 u3_uc_taxonomies <- u3_uc_id_tab %>%
   dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, taxonomy)
-write.csv(u3_uc_taxonomies, here("data", "u3_uc_tax_ass.csv"))
+write.csv(u3_uc_taxonomies, here("data", 
+                                 "outputs",
+                                 "taxonomic_data",
+                                 "u3_uc_tax_ass.csv"))
 
 #UNOISE CLEAN##
 #import both NCBI and BOLD taxonomies
-u3_c_ncbi <- read.csv(here("3_taxonomic_assignment", "MEGAN", "unoise_clean",
-                            "prey", "unoise_c_prey_ALL_ncbi_taxa.csv"))
-u3_c_bold <- read.csv(here("3_taxonomic_assignment", "BOLD", "usearch_c", 
+u3_c_ncbi <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                           "MEGAN",
+                           "unoise_clean",
+                            "prey",
+                           "unoise_c_prey_ALL_ncbi_taxa.csv"))
+
+u3_c_bold <- read.csv(here("data",
+                            "data_raw",
+                            "3_taxonomies",
+                           "BOLD", 
+                           "usearch_c", 
                             "prey", "unoise3_c_prey_bold_taxa.csv"))
 u3_c_bold <- rename(u3_c_bold, "ASV" = "Query.ID")
 
@@ -714,7 +821,12 @@ u3_c_id_tab$taxonomy <- replace_na(u3_c_id_tab$taxonomy, "no hit")
 #write the taxonomies to a file for use in the community dissimilarity scripts script
 u3_c_taxonomies <- u3_c_id_tab %>%
   dplyr::select(ASV, ID_bold, Order_bold, ID_ncbi, Order_ncbi, taxonomy)
-write.csv(u3_c_taxonomies, here("data", "u3_c_tax_ass.csv"))
+
+write.csv(u3_c_taxonomies, 
+          here("data", 
+               "outputs",
+               "taxonomic_data",
+               "u3_c_tax_ass.csv"))
 ```
 
 ```{r, include=FALSE}
@@ -1216,7 +1328,11 @@ prey_rprop_graph <- ggplot(read_totals_samples, aes(x = pipeline, y = prey/tot))
 #  gather(sample, ASVs_d2uc, ASV:QC1, factor_key = TRUE) 
 #u3_c_id_tab
 
-metadata <- read.csv(here("data", "Sample_Metadata.csv"))
+metadata <- read.csv(here("data", 
+                          "data_raw",
+                          "2_sample_data",
+                          "Sample_Metadata.csv"))
+
 lab <- as.character(metadata$sample[which(metadata$Source == "LAB")])
  
 d2_uc_lab <- d2_uc_id_tab %>%
@@ -1415,13 +1531,21 @@ known_prey_plot <- ggplot(known_reads_long, aes(x = pipeline, y = value)) +
 #the total possible diversity of any pipeline)
 #I created a tree at the Order level and at the Family level
 #then, MEGAN didn't compute branch lengths, so I did
-ord_tree <- read.tree(here("3_taxonomic_assignment", "bilateria_order.tre"))
+ord_tree <- read.tree(here("data",
+                           "data_raw",
+                           "3_taxonomies",
+                           "trees",
+                           "bilateria_order.tre"))
 ord_tree1 <- compute.brlen(ord_tree, method = "Grafen")
 ord_tree2 <- di2multi(ord_tree1) #this collapses multichotomies so that branch
 #lengths aren't domianted by zeros
 
 #same for family tree
-fam_tree <- read.tree(here("3_taxonomic_assignment", "bilateria_family.tre"))
+fam_tree <- read.tree(here("data",
+                           "data_raw",
+                           "3_taxonomies",
+                           "trees",
+                           "bilateria_family.tre"))
 fam_tree1 <- compute.brlen(fam_tree, method = "Grafen")
 fam_tree2 <- di2multi(fam_tree1)
 fam_tree2$edge.length
@@ -1781,7 +1905,10 @@ order_tree_pipe <- as.matrix(order_tree_pipe)
 
 
 #import taxonomies, set rownames, and make matrix
-order_taxonomies <- read.csv(here("data", "taxonomic_data", "order_phylos.csv"))
+order_taxonomies <- read.csv(here("data", 
+                                  "outputs",
+                                  "taxonomic_data",
+                                  "order_phylos.csv"))
 rownames(order_taxonomies) <- order_taxonomies$Order
 order_taxonomies <- as.matrix(order_taxonomies)
 
@@ -1828,7 +1955,10 @@ family_tree_pipe <- family_tree_pipe %>%
 family_tree_pipe <- as.matrix(family_tree_pipe)
 
 #import taxonomies, set rownames, and make matrix
-family_taxonomies <- read.csv(here("data", "taxonomic_data", "family_phylos.csv"))
+family_taxonomies <- read.csv(here("data", 
+                                   "outputs",
+                                   "taxonomic_data",
+                                   "family_phylos.csv"))
 rownames(family_taxonomies) <- family_taxonomies$Family
 family_taxonomies <- as.matrix(family_taxonomies)
 

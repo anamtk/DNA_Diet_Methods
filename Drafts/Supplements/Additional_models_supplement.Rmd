@@ -32,7 +32,10 @@ library(esc) #effect sizes
 ## 1. DNA abundances
 
 ```{r, include = FALSE}
-source(here("6_statistics", "2_abundance_analyses.R"), local = knitr::knit_global())
+source(here("code", 
+            "4_analyses_figures", 
+            "4b_abundance_analyses.R"), 
+       local = knitr::knit_global())
 ```
 
 ### A. Mesocosm all prey
@@ -215,7 +218,10 @@ plot_grid(lab_pred_graph, fld_pred_graph, lab_prey_graph, fld_prey_graph,
 ## 2. Natural abundance-based diet composition
 
 ```{r, include = FALSE}
-source(here("6_statistics", "3_field_richness_composition.R"), local = knitr::knit_global())
+source(here("code",
+            "4_analyses_figures",
+            "4c_field_richness_composition.R"), 
+       local = knitr::knit_global())
 ```
 
 We also performed an abundance-based PERMANOVA with a GLMM to see if abundance-based composition was influenced by surface sterilization. Because abundance can be due to many factors not related to diet importance (e.g. time since consumption, prey biomass, primer bias, random amplification and sequencing processes), this is not our primary analysis, but shows similar results.
@@ -272,7 +278,9 @@ od <- testDispersion(simulationOutput)
 ## 3. Mesocosm all prey composition
 
 ```{r, include = FALSE}
-source(here("6_statistics", "4_supp_lab_composition.R"), local = knitr::knit_global())
+source(here("code",
+            "4_analyses_figures",
+            "4c_supp_lab_composition.R"), local = knitr::knit_global())
 ```
 
 ### A. Presence-based composition

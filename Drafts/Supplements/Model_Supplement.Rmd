@@ -36,7 +36,9 @@ library(esc) #effect sizes
 ### A. Mesocosm
 
 ```{r, include = FALSE}
-source(here("6_statistics", "1_prey_detection.R"), local = knitr::knit_global())
+source(here("code",
+            "4_analyses_figures",
+            "4a_prey_detection.R"), local = knitr::knit_global())
 ```
 
 For mesocosm consumers, the full model is of the form:
@@ -123,7 +125,10 @@ plot_grid(a, c, nrow= 2, align = "hv")
 ## 2. Prey DNA Abundance
 
 ```{r, include = FALSE}
-source(here("6_statistics", "2_abundance_analyses.R"), local = knitr::knit_global())
+source(here("code",
+            "4_analyses_figures",
+            "4b_abundance_analyses.R"), 
+       local = knitr::knit_global())
 ```
 
 ### A. Mesocosm
@@ -256,7 +261,13 @@ plot_grid(b_2, e_2, nrow = 2, align = "vh")
 ## 3. Natural: Prey DNA Richness and Composition
 
 ```{r, include = FALSE}
-source(here("6_statistics", "3_field_richness_composition.R"), local = knitr::knit_global())
+source(here("code",
+            "4_analyses_figures",
+            "4d_field_richness.R"), local = knitr::knit_global())
+
+source(here("code",
+            "4_analyses_figures",
+            "4c_field_composition.R"), local = knitr::knit_global())
 ```
 
 ### A. Richness 
