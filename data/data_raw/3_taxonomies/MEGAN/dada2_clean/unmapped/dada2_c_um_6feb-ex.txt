@@ -1,6 +1,0 @@
-ASV_37,"Opisthokonta"
-ASV_3,"Hortaea thailandica"
-ASV_2,"Dothideales"
-ASV_10,"Albatrellus"
-ASV_19,"Cortinarius cf. violaceus TRTC155606"
-ASV_1,"Tremellales"
